@@ -343,3 +343,5 @@ Screenshots and measured values from a real environment are in [docs/demo/](docs
 This was generalized into a machine-checkable form after spending half a day manually auditing a single real environment (a development machine running Claude Code and Codex side by side) and finding the symptoms by hand. It was not designed from a hypothetical use case. All 14 symptoms have a real, measured example; one of them (a running session holding onto stale state) was found through self-observation while this was being designed.
 
 License: MIT
+
+<!-- commit signing test, will be reverted -->
