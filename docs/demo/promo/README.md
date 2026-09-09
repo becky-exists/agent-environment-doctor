@@ -8,6 +8,7 @@ What was changed for publication, and nothing else:
 - The project directory was an empty throwaway (`/private/tmp/agent-doctor-public-demo/project`) so no project-level paths appear.
 - Long finding bodies were collapsed to one or two lines in `03` and the right pane of `01` (`… 10 findings`). Every number and every sentence that remains is verbatim CLI output.
 - The `/skill-doctor` table (82 rows) was cut to 14 representative rows, marked `… 21 more rows`; the highlighted `finish` row and the verdict lines are verbatim.
+- In `01` the trailing `not evaluated` block (SESSION_STALENESS / HOOK_AMPLIFICATION: not observed, run with --probe) was replaced by one line, `Static scan only. Running sessions not compared (add --probe).` A first-time reader saw `HOOK_AMPLIFICATION … 1` and `HOOK_AMPLIFICATION: not observed` on the same screen and asked "so did it look or not?" The static case (one command registered on several events) and the dynamic case (firings) are different checks; the CLI wording that makes this clear is a v1.2 candidate. `03` keeps the block verbatim.
 
 | File | Shows | Source command |
 |---|---|---|

@@ -103,9 +103,7 @@ resources    203   bindings claude-code 177 / codex 98   observations 479
   33 item(s) load into every session, 64,843 bytes in total. Size is recorded as a
   fact and is not reported as a defect.
 
-not evaluated (input missing, not a pass):
-  SESSION_STALENESS: active runtime not observed (run with --probe).
-  HOOK_AMPLIFICATION: hook firings not observed (run with --probe).</span></div>
+<span class="dim">Static scan only. Running sessions not compared (add --probe).</span></span></div>
 </div>
 </div>
 <div class="caption"><b>Same machine, same minute, same skill.</b> <b>/skill-doctor</b> looks at this session: what is in the listing, what it costs per turn, what was never used. It says <b>finish</b> ran 155 times today. <b>agent-environment-doctor</b> looks at the next session and at every runtime on the box: the copy of <b>finish</b> that Codex loads is three months older and differs in 205 lines. It does not call unused skills unnecessary, and it does not decide which copy is right. Read only, both. Different questions.</div>
