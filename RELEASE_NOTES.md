@@ -4,17 +4,20 @@
 
 Fixed a privacy defect in `bundle`: when the diagnosed project directory was located **inside the home directory**, the project's real folder name could survive redaction — at `--redact strict` as well — and the bundle's own self-check still reported `passed`. Reported by a third-party reviewer who ran v1.1.0 on their own Windows environment; reproduced here on macOS before fixing. If you generated a bundle from a project under your home directory with 1.0.0–1.1.0 and shared it, that bundle may contain the project's folder name. No file contents, secrets, usernames or home paths were affected; the leak was limited to the project directory name.
 
-Two paths were involved, both the same root cause — a form of the project path that was never a substitution key:
+Three paths were involved, each one a form of the project path that was never a substitution key. The first was the reported one; the other two were found while verifying the fix, one on the author's own environment and one on the Windows CI runner:
 
 - Report text is folded to `~/…` before redaction, but project substitution only matched the absolute path. The folded form passed through untouched, and the later `~` → `$HOME` step turned it back into `$HOME/<real name>/…`.
 - A project with no memory directory under `.claude/projects` never had its encoded slug candidates registered, so the real name survived inside the "could not be narrowed down (tried: …)" explanation.
+- On Windows, where the collected home and a resource's resolved `real_path` can spell the same directory differently (short name vs long name), neither the home nor the project key matched. A later substitution then split the path in two, and the last-resort absolute-path pass stopped at that marker instead of swallowing the rest. The last net now spans placeholders it produced itself, and separator variants (`\` and `/`) of the project root are registered as keys.
 
 Also in this release:
 
 - `redaction.projects_anonymised` now counts projects **whose name was actually replaced**, not ids that were merely assigned. The new `redaction.project_ids_assigned` field carries the previous meaning. In the reported case the old field read `1` while nothing had been replaced.
 - The bundle self-check now verifies the project roots and slugs that `redaction.rules[]` promises to remove, matching them as whole tokens so that both `$HOME/<name>/…` and slug-encoded `-Users-<user>-<name>` forms are caught. Project names that collide with structural directory names or with the Doctor's own prose vocabulary are still replaced but are deliberately not used as self-check needles, to keep the check free of false alarms.
 
-Regression coverage: 8 new tests pin the reported reproduction, both leak paths, the honesty of the summary counters, and the self-check's ability to catch the pre-fix output. All 8 fail against the 1.1.0 sources and pass after the fix. Full suite 199 passing / 1 skipped on macOS.
+Worth recording: on the third path, the new self-check did its job — it named the leaking field and the bundle would have been refused rather than written. Failing closed is what it is for.
+
+Regression coverage: 10 new tests pin the reported reproduction, all three leak paths, the honesty of the summary counters, the self-check's ability to catch the pre-fix output, and its silence on the Doctor's own prose. Full suite 201 passing / 1 skipped, green on macOS and Windows across Node 20 and 24.
 
 ## 1.1.0
 
