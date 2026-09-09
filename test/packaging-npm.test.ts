@@ -20,7 +20,11 @@ import { ROOT } from './helpers.js';
 const execFileAsync = promisify(execFile);
 
 test('npm pack: tarball に docs/src/test/fixtures/tsconfig が含まれない', async () => {
-  const { stdout } = await execFileAsync('npm', ['pack', '--dry-run', '--json'], { cwd: ROOT, maxBuffer: 10 * 1024 * 1024 });
+  // Windows実機で判明（#87 RC round 1）: bare name 'npm' は Windows 上では npm.cmd に解決される
+  // .cmd ファイルであり、shell を介さない execFile/execFileAsync は spawn npm ENOENT で落ちる
+  // （このプロジェクト既知の制約 #81, #86 と同根の Windows child_process の落とし穴）。
+  // shell: true でOS標準シェル経由にすることで、PATHEXT解決を含め正しく npm を起動できる
+  const { stdout } = await execFileAsync('npm', ['pack', '--dry-run', '--json'], { cwd: ROOT, maxBuffer: 10 * 1024 * 1024, shell: true });
   const [{ files, size, unpackedSize }] = JSON.parse(stdout) as Array<{
     files: Array<{ path: string }>;
     size: number;
