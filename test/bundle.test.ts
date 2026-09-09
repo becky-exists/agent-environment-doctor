@@ -858,9 +858,34 @@ test('#91 bundle E2E: HOME 配下の project のフォルダ名が bundle に 1 
   const llm = await buildLlmReport(snapshot, result, { readText });
   const b = await buildBundle({ snapshot, result, llm, clusters: [], history: null, level: 'strict', readText, symptom: null });
 
-  const raw = JSON.stringify(b);
-  assert.ok(!raw.includes('SECRETCLIENT'), 'bundle に project のフォルダ名が残っている');
+  // 「残っている」だけでは直せない。**どこに** 残ったかを出す（Windows 実機の切り分けで必要になった）
+  const spots: string[] = [];
+  const walk = (v: unknown, where: string): void => {
+    if (typeof v === 'string') {
+      if (v.includes('SECRETCLIENT')) spots.push(`${where} => ${v.slice(0, 160)}`);
+      return;
+    }
+    if (Array.isArray(v)) return void v.forEach((x, i) => walk(x, `${where}[${i}]`));
+    if (v && typeof v === 'object') {
+      for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+        if (k.includes('SECRETCLIENT')) spots.push(`${where} (key) => ${k.slice(0, 160)}`);
+        walk(val, `${where}.${k}`);
+      }
+    }
+  };
+  walk(b, '$');
+  assert.deepEqual(spots, [], 'bundle に project のフォルダ名が残っている');
   assert.equal(b.redaction.self_check.passed, true, `self check が落ちた: ${JSON.stringify(b.redaction.self_check.leaks)}`);
+});
+
+test('#91 scanForLeaks: project 名がありふれた語でも、散文に出ただけなら叫ばない（Windows fixture の `work` で誤爆した）', () => {
+  const home = '/Users/someone';
+  const projects = ['C:\\Users\\foo.bar\\work'];
+  const prose = { handoff_contract: ['You are receiving a diagnosis, not a work order. The Doctor observed, kept evidence, and stopped.'] };
+  assert.deepEqual(scanForLeaks(prose, { home, projects }), [], '自己検査が Doctor 自身の定型文に誤爆している');
+  // 在り処として出ていれば、同じ語でもちゃんと拾う
+  const real = { x: 'C:\\Users\\<user>\\work\\.claude\\agents\\a.md' };
+  assert.ok(scanForLeaks(real, { home, projects }).some((l) => l.kind === 'project_root'), 'パスに面した出現を見逃している');
 });
 
 // #91 の 2 経路目。実環境での検証中に見つけた——同じ「置換の鍵になっていない形」の別の入口。

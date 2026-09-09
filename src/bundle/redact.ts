@@ -72,11 +72,22 @@ export function foldedHomeForms(root: string, home: string): string[] {
   const rel = root.slice(home.length);
   if (!/^[/\\]/.test(rel)) return []; // home そのもの、または `homeXXX` のような別ディレクトリ
   const out = new Set<string>();
-  for (const r of [rel, rel.replace(/\//g, '\\'), rel.replace(/\\/g, '/')]) {
+  for (const r of separatorVariants(rel)) {
     out.add(`~${r}`);
     out.add(`$HOME${r}`);
   }
   return [...out];
+}
+
+/**
+ * 同じパスの区切り文字違い（Windows 実機で必要、#91）。
+ *
+ * Doctor は Windows で `\` と `/` を意図的に行き来する（`toPosixPath` / `toPosixKey` は
+ * まさにそのために在る）。置換の鍵を**採取した時の形だけ**で持つと、正規化された側が素通りする。
+ * 鍵は安いので両方持つ。
+ */
+export function separatorVariants(p: string): string[] {
+  return [...new Set([p, p.replace(/\//g, '\\'), p.replace(/\\/g, '/')])];
 }
 
 export interface RedactorOptions {
@@ -136,6 +147,8 @@ export class Redactor {
     const roots = [opts.project, ...(opts.extraProjects ?? [])].filter((x): x is string => typeof x === 'string' && x.length > 0);
     for (const root of roots) {
       const id = this.assignProject(root);
+      // #91: 採取時と正規化後で区切り文字が違うことがある（Windows）
+      for (const v of separatorVariants(root)) this.projectIds.set(v, id);
       const m = matchProjectSlug(root, slugs);
       if (m.slug) this.projectIds.set(m.slug, id);
       // 符号化候補は、`~/.claude/projects` に**実在しなくても**同じ id へ（#91）。
@@ -404,7 +417,10 @@ function projectNeedles(projects: string[]): Array<{ kind: string; value: string
   for (const p of projects) {
     if (!p) continue;
     const hasSep = /[/\\]/.test(p);
-    const value = hasSep ? basename(p.replace(/[/\\]+$/, '')) : p;
+    // node:path の basename は動いている OS の規則で切る。POSIX 上では Windows パスの `\` を
+    // 区切りとみなさず、丸ごと 1 語として返す（#72 / #81 と同じ型の罠）。
+    // bundle は「Windows で採取したものを Mac で読む」ことが在りうるので、両方の区切りで切る。
+    const value = hasSep ? (p.replace(/[/\\]+$/, '').split(/[/\\]/).pop() ?? '') : p;
     const lower = value.toLowerCase();
     if (!isIdentityLike(value) || GENERIC_USERNAMES.has(lower) || DOCTOR_VOCABULARY.has(lower)) continue;
     if (seen.has(value)) continue;
@@ -424,15 +440,28 @@ const DOCTOR_VOCABULARY = new Set([
   'binding', 'bindings', 'observation', 'observations', 'claude', 'codex', 'doctor', 'snapshot', 'history',
 ]);
 
+/**
+ * パスや識別子の「構造」を示す記号。project 名がこれに面していたら、それは**散文ではなく在り処**。
+ * 空白に挟まれただけの出現（Doctor 自身の説明文に同じ単語が出ただけ）とはここで分ける。
+ */
+const STRUCTURE_MARKS = new Set(['/', '\\', '-', '@', ':', '=', '"', "'", '`']);
+
 function matchNeedle(haystack: string, needle: string, mode: NeedleMode): boolean {
   if (mode === 'anywhere') return haystack.includes(needle);
   if (mode === 'adjacent') return identityAdjacent(haystack, needle);
-  // token: 前後が英数字・下線でない = 1 語として現れている
+  // token: 文字列そのもの、または「構造記号に面していて、反対側が単語の途中でない」出現。
+  //
+  // 実機で分かったこと（Windows CI）: 前後が英数字でないだけを条件にすると、project 名が
+  // ありふれた語（fixture の `work`）の時に Doctor 自身の定型文（"not a work order"）へ誤爆する。
+  // 自己検査が clean な bundle で叫ぶのは、漏れを見逃すのとは別の意味で信用を失う。
+  if (haystack.trim() === needle) return true;
   let i = haystack.indexOf(needle);
   while (i !== -1) {
     const before = i > 0 ? haystack[i - 1]! : '';
     const after = i + needle.length < haystack.length ? haystack[i + needle.length]! : '';
-    if (!/[A-Za-z0-9_]/.test(before) && !/[A-Za-z0-9_]/.test(after)) return true;
+    const beforeAlnum = /[A-Za-z0-9]/.test(before);
+    const afterAlnum = /[A-Za-z0-9]/.test(after);
+    if (!beforeAlnum && !afterAlnum && (STRUCTURE_MARKS.has(before) || STRUCTURE_MARKS.has(after))) return true;
     i = haystack.indexOf(needle, i + 1);
   }
   return false;
