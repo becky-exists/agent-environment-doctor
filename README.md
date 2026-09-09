@@ -1,6 +1,8 @@
 # Agent Environment Doctor
 
-**Diagnoses the *effective* runtime state of AI agent environments (Claude Code, Codex). Read only. It observes, keeps evidence, names symptoms. It does not treat.**
+**Configured ≠ Loaded ≠ Effective.**
+Diagnoses the gap between what exists on disk and what Claude Code / Codex can actually see or use at runtime.
+Not a prerequisite checker. Not an optimizer. Read only.
 
 > Current release: **v1.1.0**. Supports macOS / Windows (native), Claude Code / Codex, Node `>=20`. Published at [github.com/becky-exists/agent-environment-doctor](https://github.com/becky-exists/agent-environment-doctor).
 
@@ -30,6 +32,20 @@ This is the one distinction that shapes every design decision below. Read it bef
 ## Quick Start
 
 ```bash
+npx agent-environment-doctor@latest scan --project /path/to/your/project
+```
+
+That's a static scan: on-disk config only, diagnosing what the *next* session you launch will look like. Add `--probe` to also compare against a **currently running** session (reads existing transcript/rollout records only — never launches anything, spends no tokens):
+
+```bash
+npx agent-environment-doctor@latest scan --probe --project /path/to/your/project
+```
+
+Agent Environment Doctor itself does not send diagnostic data over the network. `npx` itself downloads the package from the npm registry and writes to the npm cache — that is npm's behavior, not the Doctor's.
+
+### Alternative: Release ZIP (offline-ish install)
+
+```bash
 # Download agent-doctor-runtime-<version>.zip from
 # https://github.com/becky-exists/agent-environment-doctor/releases
 unzip agent-doctor-runtime-<version>.zip -d agent-doctor
@@ -37,20 +53,6 @@ cd agent-doctor
 npm ci --omit=dev
 node dist/cli.js scan --project /path/to/your/project
 ```
-
-That's a static scan: on-disk config only, diagnosing what the *next* session you launch will look like. Add `--probe` to also compare against a **currently running** session (reads existing transcript/rollout records only — never launches anything, spends no tokens):
-
-```bash
-node dist/cli.js scan --probe --project /path/to/your/project
-```
-
-Or, once published, via npx (no download step):
-
-```bash
-npx agent-environment-doctor@latest scan --project /path/to/your/project
-```
-
-Agent Environment Doctor itself does not send diagnostic data over the network. `npx` itself downloads the package from the npm registry and writes to the npm cache — that is npm's behavior, not the Doctor's.
 
 ### Building from source, and updating
 
