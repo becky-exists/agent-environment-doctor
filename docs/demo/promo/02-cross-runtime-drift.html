@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: #0d1117; }
+  .window {
+    width: 1040px;
+    margin: 24px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+  }
+  .titlebar { background: #21262d; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red { background: #ff5f56; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #27c93f; }
+  .titletext { color: #8b949e; font-size: 13px; margin-left: 8px; }
+  .body { background: #0d1117; color: #c9d1d9; padding: 20px 22px; font-size: 13.2px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .prompt { color: #7ee787; }
+  .cmd { color: #79c0ff; }
+  .warn { color: #d29922; font-weight: 600; }
+  .dim { color: #8b949e; }
+  .hd { color: #e6edf3; font-weight: 600; }
+  .minus { color: #ffa198; }
+  .plus { color: #7ee787; }
+  .hunk { color: #a5d6ff; }
+  .key { color: #d2a8ff; }
+</style>
+</head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <div class="titletext">zsh — agent-environment-doctor · CROSS_RUNTIME_DRIFT</div>
+  </div>
+  <div class="body"><span class="prompt">$</span> <span class="cmd">npx agent-environment-doctor@latest scan --project . | grep CROSS_RUNTIME_DRIFT</span>
+<span class="warn">WARN   CROSS_RUNTIME_DRIFT                          10</span>
+<span class="dim">  10 skills share a name between ~/.claude/skills (claude-code) and ~/.agents/skills (codex) and differ in content.
+  Largest: "finish" (205 lines). Smallest, shown below: "frontend-design" (2 lines).</span>
+
+<span class="prompt">$</span> <span class="cmd">npx agent-environment-doctor@latest report --llm --finding F-014 --format md</span>
+<span class="hd">### F-014  <span class="warn">WARN  CROSS_RUNTIME_DRIFT</span>  (confidence: high, cluster drift:claude-code|codex)</span>
+
+Skill "frontend-design" is discovered by claude-code at ~/.claude/skills/frontend-design/SKILL.md (2026-04-24) and by codex at ~/.agents/skills/frontend-design/SKILL.md (2026-06-08). Normalized content differs in 2 lines. The codex copy has the later mtime; <span class="hd">mtime says which was touched last, not which is correct.</span>
+
+<span class="key">Severity basis:</span> warn: two runtimes discover different content under the same skill name. It is not known whether the divergence is intended, so this is never error.
+<span class="key">Confidence basis:</span> high: content hashes after normalization are static facts.
+
+<span class="key">Affected:</span>
+- claude-code ~/.claude/skills/frontend-design/SKILL.md  discovered=true   load_mode=on_demand
+- codex       ~/.claude/skills/frontend-design/SKILL.md  discovered=false  load_mode=never   (codex.skill.not_in_standard_locations)
+- claude-code ~/.agents/skills/frontend-design/SKILL.md  discovered=false  load_mode=never   (claude.skill.not_in_search_path)
+- codex       ~/.agents/skills/frontend-design/SKILL.md  discovered=true   load_mode=on_demand
+
+<span class="key">Diff (normalized, +1 / -1):</span>
+<span class="dim">--- claude-code:~/.claude/skills/frontend-design/SKILL.md   ('-' = lines only on this side)
++++ codex:~/.agents/skills/frontend-design/SKILL.md        ('+' = lines only on this side)</span>
+<span class="hunk">@@ -41 +41 @@</span>
+<span class="minus">-Remember: Claude is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully t …</span>
+<span class="plus">+Remember: Codex is capable of extraordinary creative work. Don't hold back, show what can truly be created when thinking outside the box and committing fully to …</span>
+
+<span class="key">Unknown / unconfirmed:</span>
+- whether the two copies are meant to differ per runtime cannot be determined statically; only the content difference is observed
+- no owner / canonical-source record exists in the collected data
+
+<span class="key">Doctor did not conclude:</span>
+- which side is canonical
+- whether the two copies are meant to diverge
+- whether either copy should be edited
+
+<span class="key">Human decision needed:</span>
+- Are the two copies of "frontend-design" meant to be the same? If so, what should the shared content be (either side, a merge, or a generated variant)?
+
+<span class="dim">Applies on: next session</span></div>
+</div>
+</body>
+</html>

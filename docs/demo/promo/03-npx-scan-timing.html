@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: #0d1117; }
+  .window {
+    width: 980px;
+    margin: 24px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+  }
+  .titlebar { background: #21262d; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red { background: #ff5f56; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #27c93f; }
+  .titletext { color: #8b949e; font-size: 13px; margin-left: 8px; }
+  .body { background: #0d1117; color: #c9d1d9; padding: 20px 22px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .prompt { color: #7ee787; }
+  .cmd { color: #79c0ff; }
+  .err { color: #ff7b72; font-weight: 600; }
+  .warn { color: #d29922; font-weight: 600; }
+  .dim { color: #8b949e; }
+  .hd { color: #e6edf3; font-weight: 600; }
+  .time { color: #7ee787; font-weight: 700; font-size: 15px; }
+</style>
+</head>
+<body>
+<div class="window">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <div class="titletext">zsh — fresh npm cache, nothing installed beforehand</div>
+  </div>
+  <div class="body"><span class="prompt">$</span> <span class="cmd">/usr/bin/time -p npx --yes agent-environment-doctor@1.1.0 scan --project .</span>
+<span class="hd">Report scope: NEXT SESSION (static analysis)</span>
+  Running sessions keep the state they started with.
+  Config changes take effect on next launch.
+  To compare against sessions already running: --probe
+
+Coverage: Phase 0 (static, next_session)
+  collected 13 groups / not collected 13 groups  (use --coverage for the full text)
+
+claude-code  2.1.266   ~/.claude
+codex        (version unknown)   ~/.codex
+project      /private/tmp/agent-doctor-public-demo/project
+
+resources    203   bindings claude-code 177 / codex 98   observations 479
+active       not observed (run with --probe to compare against running sessions)
+protected    32 resources, 720,603 B — no proposal about their size or existence; findings on them keep their severity
+
+<span class="err">ERROR  UNREACHABLE_REFERENCE / missing_target       4</span>
+<span class="dim">  … 4 findings, each with ref / searched / binding lines and an `agent-doctor explain` pointer</span>
+<span class="warn">WARN   CROSS_RUNTIME_DRIFT                          10</span>
+<span class="dim">  … 10 findings</span>
+<span class="warn">WARN   HOOK_AMPLIFICATION / same_registration_multiple_events 1</span>
+<span class="warn">WARN   UNREACHABLE_REFERENCE / missing_target       2</span>
+
+<span class="dim">no findings for:
+  15 MCP server binding(s) (claude-code 7, codex 8), load_mode=deferred. Count alone is not reported.
+  33 item(s) load into every session, 64,843 bytes in total. Size is recorded as a fact and is not reported as a defect.
+  53 discovered skill(s) have no recorded invocation (usage_record). Unused is not reported as a finding.
+
+not evaluated (input missing, not a pass):
+  SESSION_STALENESS: active runtime not observed (run with --probe).
+  HOOK_AMPLIFICATION: hook firings not observed (run with --probe).</span>
+
+<span class="time">real 4.16</span>
+user 2.38
+sys 0.53
+
+<span class="dim"># 203 resources, 479 observations, 17 findings. Download included. Nothing written to disk under ~/.claude or ~/.codex.</span></div>
+</div>
+</body>
+</html>

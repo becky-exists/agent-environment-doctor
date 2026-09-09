@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: #0d1117; }
+  .row { display: flex; gap: 20px; margin: 24px; align-items: stretch; }
+  .window {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+    display: flex; flex-direction: column;
+  }
+  .w1 { width: 560px; }
+  .w2 { width: 760px; }
+  .titlebar { background: #21262d; padding: 10px 14px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot.red { background: #ff5f56; } .dot.yellow { background: #ffbd2e; } .dot.green { background: #27c93f; }
+  .titletext { color: #8b949e; font-size: 13px; margin-left: 8px; }
+  .body { background: #0d1117; color: #c9d1d9; padding: 18px 20px; font-size: 12.6px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; flex: 1; }
+  .prompt { color: #7ee787; }
+  .cmd { color: #79c0ff; }
+  .ok { color: #7ee787; font-weight: 600; }
+  .err { color: #ff7b72; font-weight: 600; }
+  .warn { color: #d29922; font-weight: 600; }
+  .dim { color: #8b949e; }
+  .hd { color: #e6edf3; font-weight: 600; }
+  .caption { margin: 0 24px 24px 24px; color: #8b949e; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; width: 1340px; }
+  .caption b { color: #c9d1d9; }
+</style>
+</head>
+<body>
+<div class="row">
+<div class="window w1">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <div class="titletext">zsh — claude doctor</div>
+  </div>
+  <div class="body"><span class="prompt">$</span> <span class="cmd">claude doctor</span>
+<span class="hd">Claude Code doctor</span>
+
+Running: npm-global (2.1.266)
+Commit: eb01d6090964
+Platform: darwin-arm64
+Path: ~/.nvm/versions/node/v24.14.1/lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe
+Config install method: global
+Search: OK (bundled)
+Auto-updates: enabled
+Auto-update channel: latest
+Last update attempt: success → 2.1.266 (2026-09-09)
+Managed settings (remote): checking… (fetch in progress; re-run in a moment)
+Organization policy: Loaded from api.anthropic.com
+
+Remote Control
+Control this session from claude.ai/code or the Claude mobile app
+
+<span class="ok">No installation issues found.</span>
+
+<span class="dim">For a full setup checkup that can also fix issues, run /doctor in a Claude Code session.</span></div>
+</div>
+
+<div class="window w2">
+  <div class="titlebar">
+    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+    <div class="titletext">zsh — agent-environment-doctor (same machine, same minute)</div>
+  </div>
+  <div class="body"><span class="prompt">$</span> <span class="cmd">npx agent-environment-doctor@latest scan --project .</span>
+<span class="hd">Report scope: NEXT SESSION (static analysis)</span>
+  Running sessions keep the state they started with.
+  Config changes take effect on next launch.
+  To compare against sessions already running: --probe
+
+claude-code  2.1.266   ~/.claude
+codex        (version unknown)   ~/.codex
+project      /private/tmp/agent-doctor-public-demo/project
+
+resources    203   bindings claude-code 177 / codex 98   observations 479
+protected    32 resources, 720,603 B — no proposal about their size or existence
+
+<span class="err">ERROR  UNREACHABLE_REFERENCE / missing_target       4</span>
+<span class="dim">  ~/.claude/agents/andy.md:28 references `vercel:react-best-practices`.
+  Plugin `vercel` is not enabled in any runtime. Searched 9 places.</span>
+<span class="warn">WARN   CROSS_RUNTIME_DRIFT                          10</span>
+<span class="dim">  Skill "finish": ~/.claude/skills (2026-09-07) vs ~/.agents/skills (2026-06-08).
+  Normalized content differs in 205 lines.</span>
+<span class="warn">WARN   HOOK_AMPLIFICATION / same_registration_multiple_events 1</span>
+<span class="warn">WARN   UNREACHABLE_REFERENCE / missing_target       2</span>
+
+<span class="dim">no findings for:
+  15 MCP server binding(s) (claude-code 7, codex 8), load_mode=deferred. Count alone is not reported.
+  33 item(s) load into every session, 64,843 bytes in total. Size is recorded as a fact and is not
+  reported as a defect.
+  53 discovered skill(s) have no recorded invocation. Unused is not reported as a finding.
+
+not evaluated (input missing, not a pass):
+  SESSION_STALENESS: active runtime not observed (run with --probe).
+  HOOK_AMPLIFICATION: hook firings not observed (run with --probe).</span></div>
+</div>
+</div>
+<div class="caption"><b>Same machine, same minute.</b> <b>claude doctor</b> answers "is the installation healthy?" — and it is. <b>agent-environment-doctor</b> answers a different question: "what will the next session actually load, and does it match what is on disk?" Read only. Neither replaces the other.</div>
+</body>
+</html>
