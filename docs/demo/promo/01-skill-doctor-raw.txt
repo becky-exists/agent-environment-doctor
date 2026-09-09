@@ -1,0 +1,98 @@
+Skills loaded this session
+
+  skill                                            source             context  7d tokens   uses  last used
+  _brand-template                                  userSettings           ~50          -     0×  never
+  apple-design                                     userSettings          ~150          -     0×  never
+  codebase-memory                                  userSettings          ~160          -     0×  never
+  deep-think                                       userSettings           ~70          -     0×  never
+  eco                                              userSettings           ~50          -     0×  never
+  fixing-accessibility                             userSettings           ~60          -     0×  never
+  fixing-motion-performance                        userSettings           ~70          -     0×  never
+  hyperframes-animation                            userSettings          ~220          -     0×  never
+  hyperframes-audio                                userSettings          ~230          -     0×  never
+  hyperframes-cli                                  userSettings          ~190          -     0×  never
+  hyperframes-core                                 userSettings          ~130          -     0×  never
+  hyperframes-creative                             userSettings          ~110          -     0×  never
+  hyperframes-keyframes                            userSettings          ~150          -     0×  never
+  hyperframes-registry                             userSettings          ~160          -     0×  never
+  mcp-builder                                      userSettings           ~80          -     0×  never
+  media-use                                        userSettings          ~220          -     0×  never
+  moto-logos-brand                                 userSettings           ~80          -     0×  never
+  music-to-video                                   userSettings          ~140          -     0×  never
+  ougi                                             userSettings           ~90          -     0×  never
+  power                                            userSettings           ~60          -     0×  never
+  quick-check                                      userSettings           ~40          -     0×  never
+  refactor-instructions                            userSettings           ~80          -     0×  never
+  slight-brand                                     userSettings           ~60          -     0×  never
+  verification-before-completion                   userSettings           ~90          -     0×  never
+  web-production-checklist                         userSettings           ~80          -     0×  never
+  codex:adversarial-review                         codex                    -          -     0×  never
+  codex:cancel                                     codex                    -          -     0×  never
+  codex:codex-cli-runtime                          codex                  ~40          -     0×  never
+  codex:codex-result-handling                      codex                  ~30          -     0×  never
+  codex:gpt-5-4-prompting                          codex                  ~60          -     0×  never
+  claude-mem:babysit                               claude-mem             ~70          -     0×  never
+  claude-mem:ccs-align                             claude-mem            ~210          -     0×  never
+  claude-mem:cloud-sync                            claude-mem             ~90          -     0×  never
+  claude-mem:design-is                             claude-mem            ~130          -     0×  never
+  claude-mem:do                                    claude-mem             ~50          -     0×  never
+  claude-mem:how-it-works                          claude-mem             ~70          -     0×  never
+  claude-mem:knowledge-agent                       claude-mem             ~90          -     0×  never
+  claude-mem:learn-codebase                        claude-mem             ~80          -     0×  never
+  claude-mem:make-plan                             claude-mem             ~70          -     0×  never
+  claude-mem:mode-creator                          claude-mem            ~170          -     0×  never
+  claude-mem:oh-my-issues                          claude-mem            ~170          -     0×  never
+  claude-mem:pathfinder                            claude-mem            ~110          -     0×  never
+  claude-mem:smart-explore                         claude-mem             ~80          -     0×  never
+  claude-mem:standup                               claude-mem             ~50          -     0×  never
+  claude-mem:timeline-report                       claude-mem             ~90          -     0×  never
+  claude-mem:version-bump                          claude-mem            ~120          -     0×  never
+  claude-mem:weekly-digests                        claude-mem            ~140          -     0×  never
+  claude-mem:what-the                              claude-mem             ~50          -     0×  never
+  claude-mem:wowerpoint                            claude-mem             ~80          -     0×  never
+  ponytail:ponytail-audit                          ponytail              ~140          -     0×  never
+  ponytail:ponytail-debt                           ponytail              ~140          -     0×  never
+  ponytail:ponytail-gain                           ponytail              ~110          -     0×  never
+  ponytail:ponytail-help                           ponytail               ~80          -     0×  never
+  ponytail:ponytail-review                         ponytail              ~160          -     0×  never
+  last30days:last30days                            last30days             ~90          -     0×  never
+  codex:review                                     codex                    -          -     1×  111 days
+  gemini                                           userSettings           ~40          -     2×  110 days
+  lucide-icons                                     userSettings           ~90          -     1×  104 days
+  image-prompt-director                            userSettings           ~80          -     3×  93 days
+  telegram:access                                  telegram               ~70          -     3×  93 days
+  telegram:configure                               telegram               ~90          -     4×  91 days
+  skill-creator                                    userSettings          ~110          -     1×  90 days
+  agmsg                                            userSettings           ~20          -     1×  75 days
+  claude-code-setup:claude-automation-recommender  claude-code-setup     ~140          -     1×  70 days
+  frontend-design                                  userSettings          ~140          -     5×  69 days
+  baseline-ui                                      userSettings           ~70          -     2×  64 days
+  setup-audit                                      userSettings           ~70          -     1×  60 days
+  claude-mem:mem-search                            claude-mem             ~70          -     1×  59 days
+  becky-observer-check                             userSettings           ~50          -     1×  58 days
+  agent-reach                                      userSettings           ~70          -     6×  47 days
+  systematic-debugging                             userSettings           ~40          -     1×  38 days
+  becky-proofreader                                userSettings           ~50          -     4×  15 days
+  visual-trace                                     userSettings             -          -     1×  13 days
+  hyperframes                                      userSettings          ~270          -     1×  12 days
+  craft-code                                       userSettings           ~60       4.5m     1×  3 days
+  ponytail:ponytail                                ponytail              ~280      52.8k     1×  2 days
+  becky-memory-tidy                                userSettings           ~70      29.4m    22×  today
+  finish                                           userSettings           ~60     148.5m   155×  today
+  codex:rescue                                     codex                  ~40       555k     5×  today
+  codex:result                                     codex                    -       8.3m     1×  today
+  codex:setup                                      codex                  ~40     742.9k     4×  today
+  codex:status                                     codex                    -     588.4k     1×  today
+
+  context = this skill's one-line listing in the system prompt, included every turn
+  (dash = not in the current listing, costs nothing; full SKILL.md loads only when it runs)
+  7d tokens = tokens attributed to the skill over the last 7 days of sessions on this machine
+
+25 skills loaded but never invoked. Each one adds to the system prompt every turn. Disable in /skills, or remove from .claude/skills.
+1 plugin skill loaded but never invoked, from last30days. Each one adds to the system prompt every turn. Plugin skills can't be turned off individually — disable the plugin in /plugin.
+
+Plugins not used recently
+
+  claude-code-setup  last used 70 days ago
+
+  Manage these in /plugin

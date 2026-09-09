@@ -6,12 +6,12 @@ What was changed for publication, and nothing else:
 
 - `$HOME` is shown as `~` (Doctor's own default redaction).
 - The project directory was an empty throwaway (`/private/tmp/agent-doctor-public-demo/project`) so no project-level paths appear.
-- Long finding bodies were collapsed to one or two lines in `01` and `03` (`… 10 findings`). Every number and every sentence that remains is verbatim CLI output.
-- The `claude doctor` install path had the username replaced with `~`.
+- Long finding bodies were collapsed to one or two lines in `03` and the right pane of `01` (`… 10 findings`). Every number and every sentence that remains is verbatim CLI output.
+- The `/skill-doctor` table (82 rows) was cut to 14 representative rows, marked `… 21 more rows`; the highlighted `finish` row and the verdict lines are verbatim.
 
 | File | Shows | Source command |
 |---|---|---|
-| `01-claude-doctor-vs-agent-doctor.png` | `claude doctor` (installation health, "No installation issues found.") next to Doctor's `scan` on the same machine in the same minute: 4 ERROR / 13 WARN across UNREACHABLE_REFERENCE, CROSS_RUNTIME_DRIFT, HOOK_AMPLIFICATION, plus the "no findings for" and "not evaluated" blocks. Same machine, two different questions. | `claude doctor` / `npx agent-environment-doctor@1.1.0 scan --project .` |
+| `01-skill-doctor-vs-agent-doctor.png` | Claude Code's built-in `/skill-doctor` (v2.1.252+, run non-interactively with `-p`) next to Doctor's `scan` on the same machine in the same minute. `/skill-doctor` reports the skills loaded in *this* session, their per-turn context cost and usage, and flags 25 never-invoked skills to disable. Doctor reports the *next* session across both runtimes: the same `finish` skill that `/skill-doctor` counts at 155 uses today is, on the Codex side, a copy three months older that differs in 205 lines. Doctor does not report unused as a finding. Two tools, two questions. | `claude -p "/skill-doctor"` / `npx agent-environment-doctor@1.1.0 scan --project .` |
 | `02-cross-runtime-drift.png` | One CROSS_RUNTIME_DRIFT finding in full: the same skill name (`frontend-design`) discovered by Claude Code from `~/.claude/skills` and by Codex from `~/.agents/skills`, content differing in 2 lines (`Claude is capable…` vs `Codex is capable…`). Doctor reports the difference and explicitly does not decide which side is canonical. | `npx agent-environment-doctor@1.1.0 report --llm --finding F-014 --format md` |
 | `03-npx-scan-timing.png` | `npx … scan --project .` from an empty npm cache (download included): 203 resources, 479 observations, 17 findings, `real 4.16` seconds. | `/usr/bin/time -p npx --yes agent-environment-doctor@1.1.0 scan --project .` |
 
