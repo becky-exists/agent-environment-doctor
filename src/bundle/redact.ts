@@ -264,8 +264,14 @@ export class Redactor {
       s = s.replace(this.userVariantRe, '<user>');
     }
 
-    // すでに `$HOME` や `<project-1>` に置き換わった後ろの `/...` を二重に潰さない
-    s = s.replace(/(?<![A-Za-z0-9_$>])(?:[A-Za-z]:[\\/]|\/)[A-Za-z0-9._@+-]+(?:[\\/][A-Za-z0-9._@+-]+)+/g, (m0) => {
+    // 最後の網。すでに `$HOME` や `<project-1>` に置き換わった後ろの `/...` は二重に潰さない。
+    //
+    // 区間に `<user>` `<agent_def-1>` のような**置換済みの札**が混ざっていても、ひと続きのパスとして
+    // 飲み込む（#91）。Windows 実機で、home の綴りが実体と食い違って（短縮名 `RUNNER~1` と長い名前）
+    // home 置換も project 置換も外れ、そのあと username の語だけが置き換わってパスが分断され、
+    // この網が途中で止まって残りが素の名前のまま残っていた。網が最後である以上、途中で切れてはいけない。
+    const SEG = '(?:[A-Za-z0-9._@+-]+|<[A-Za-z0-9._-]+>)';
+    s = s.replace(new RegExp(`(?<![A-Za-z0-9_$>])(?:[A-Za-z]:[\\\\/]|/)${SEG}(?:[\\\\/]${SEG})+`, 'g'), (m0) => {
       if (m0.startsWith('$HOME')) return m0;
       const first = m0.replace(/^[A-Za-z]:[\\/]/, '').replace(/^\//, '').split(/[\\/]/)[0] ?? '';
       if (PUBLIC_ROOTS.has(first)) return m0;

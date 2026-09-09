@@ -915,3 +915,20 @@ test('#91 scanForLeaks: Doctor 自身が散文で使う語と同じ project 名�
   const prose = { x: 'the agent definition lists skills that the runtime discovers' };
   assert.deepEqual(scanForLeaks(prose, { home, projects: [`${home}/agent`] }), []);
 });
+
+// Windows 実機 CI（2026-09-09）で見つけた 3 経路目。**Mac では再現しない**ので、ここでは
+// 実機で観測された文字列の形をそのまま固定する。
+//
+// 実機で起きたこと: temp の home が短縮名（`RUNNER~1`）で採取され、resource の real_path は
+// 長い綴りだったため home 置換も project 置換も外れた。そのあと username の語（この環境では
+// basename が `home`）だけが `<user>` に置き換わってパスが分断され、最後の網（絶対パスの総当たり）が
+// `<user>` の手前で止まり、残りの `\SECRETCLIENT\...` が素のまま残った。
+// 最後の網である以上、置換済みの札をまたいで飲み込めなければならない。
+
+test('#91 redact: 置換済みの札（<user> 等）で分断されたパスも、最後の網がひと続きとして飲み込む', () => {
+  const R = new Redactor({ home: 'C:\\Users\\RUNNER~1\\Temp\\p91\\home', project: 'C:\\Users\\RUNNER~1\\Temp\\p91\\home\\SECRETCLIENT', level: 'strict' });
+  // home の綴りが実体と食い違った場合に real_path として現れる形（長い綴り）
+  const realPath = 'C:\\Users\\runneradmin\\Temp\\p91\\home\\SECRETCLIENT\\.claude\\agents\\andy.md';
+  const out = R.text(realPath);
+  assert.ok(!out.includes('SECRETCLIENT'), `分断されたパスに project 名が残った: ${out}`);
+});
