@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "server-01": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-01"] },
+    "server-02": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-02"] },
+    "server-03": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-03"] },
+    "server-04": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-04"] },
+    "server-05": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-05"] },
+    "server-06": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-06"] },
+    "server-07": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-07"] },
+    "server-08": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-08"] },
+    "server-09": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-09"] },
+    "server-10": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-10"] },
+    "server-11": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-11"] },
+    "server-12": { "type": "stdio", "command": "npx", "args": ["-y", "fixture-mcp-server-12"] }
+  },
+  "skillUsage": {
+    "used-once": { "usageCount": 1, "lastUsed": "2026-09-01T00:00:00.000Z" }
+  },
+  "projects": {}
+}

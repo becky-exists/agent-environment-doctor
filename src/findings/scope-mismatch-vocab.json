@@ -1,0 +1,13 @@
+{
+  "_comment": "SCOPE_MISMATCH 条件 B（heuristic）の語彙。本文中の起動条件を示す表現。正規表現、大文字小文字は無視。ハードコードせず設定に出す（言語や表現の違いで外すため）。Phase 0 は日本語 / 英語 各 3 パターン、confidence medium。",
+  "ja": [
+    "で起動している場合",
+    "で起動した(とき|時|場合)",
+    "(セッション|モード)(のみ|だけ|限定)"
+  ],
+  "en": [
+    "when (the CLI is )?launched with",
+    "only (when|if) (running|launched|started) (with|in|as)",
+    "(applies|apply) (only )?(to|in) [a-z-]+ sessions?"
+  ]
+}

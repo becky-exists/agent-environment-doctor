@@ -1,0 +1,8 @@
+{
+  "enabledPlugins": {},
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "echo fixture-session-start" } ] }
+    ]
+  }
+}

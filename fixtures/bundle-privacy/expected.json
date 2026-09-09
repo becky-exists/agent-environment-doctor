@@ -1,0 +1,38 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "bundle-privacy",
+  "home": "env/home",
+  "project": null,
+  "runtimes": ["claude-code", "codex"],
+  "findings": [],
+  "guard": "この fixture は Finding のためではなく redaction のためにある。bundle に本文・secret・顧客名・username が 1 つでも出たら失格（test/bundle.test.ts）。",
+  "no_findings": [
+    {
+      "path": "~/.claude/settings.json#hooks.SessionStart[0].hooks[0]",
+      "why": "1 event に 1 本の hook。登録されていることは増幅ではない。ここに置いてあるのは command 文字列に secret を仕込むため。"
+    },
+    {
+      "path": "~/.claude/skills/client-alpha-brand/SKILL.md",
+      "why": "同名の相手がいないので drift ではない。ここに置いてあるのは skill 名と description に案件名が入っている状態を作るため。"
+    },
+    {
+      "path": "~/.claude/projects/-Users-tanaka-work-client-alpha/memory/MEMORY.md",
+      "why": "protected な memory。大きさも存在も症状ではない。ここに置いてあるのは slug に顧客名と username が入っている状態を作るため。"
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "path": "~/.claude/skills/client-alpha-brand/SKILL.md",
+      "runtime": "claude-code",
+      "discovered": true
+    },
+    {
+      "path": "~/.claude/projects/-Users-tanaka-work-client-alpha/memory/MEMORY.md",
+      "kind": "memory"
+    },
+    {
+      "path": "~/.claude/CLAUDE.md",
+      "kind": "instruction"
+    }
+  ]
+}

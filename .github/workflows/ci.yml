@@ -1,0 +1,148 @@
+# Agent Environment Doctor — CI (Issue #77 M1)
+#
+# NOTE (2026-09-08): this file lives at
+# iw-projects/agent-environment-doctor/.github/workflows/ci.yml inside the
+# interventionworks monorepo. GitHub Actions only discovers workflows at the
+# *repository root* .github/workflows/, so this file is inert here — it does
+# not run as CI for the monorepo. It is written so that it works unchanged
+# once this directory becomes the root of its own repo under the
+# becky-exists GitHub Organization (Issue #77 M2, github.com/becky-exists/
+# agent-environment-doctor). Do not "fix" the fact that it doesn't fire in
+# the monorepo; that's expected until the split.
+#
+# Two independent gates, matching Issue #77 M1:
+#   1. `test`               — npm ci / typecheck / build / full `npm test` on
+#                              macOS + Windows native, across the Node versions
+#                              we support (matrix below).
+#   2. `release-zip-smoke`  — builds the official runtime ZIP (scripts/build-runtime-zip.ts)
+#                              and smoke-tests the *packaged* artifact (extract →
+#                              npm ci --omit=dev → run the compiled CLI), separately
+#                              from the source-tree tests in job 1. This is the gate
+#                              that would have caught #76 (vocab JSON missing from dist).
+#
+# Skips and why (Issue #77 requires: "record the reason for any skip, and the alternate gate"):
+#   - Linux is not in the OS matrix. macOS + Windows native are the two
+#     supported platforms (see README "Supported"); Linux is unverified and
+#     out of scope for v1.0. No alternate gate — genuinely untested.
+#   - test/packaging.test.ts's "fresh checkout from git archive" regression
+#     self-skips only when it is not run inside a git working tree (e.g. if
+#     someone ran the tests from an extracted release ZIP, which has no
+#     .git). Under actions/checkout in this workflow it always has a git
+#     working tree, so it runs for real here, not skipped. Alternate gate for
+#     the ZIP-without-.git case: the release-zip-smoke job below, which
+#     starts from the ZIP itself.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        # engines.node is ">=20" (package.json). We pin two rungs of that
+        # range: the oldest supported major (20.x, "latest patch of 20") and
+        # the exact version this project is actually developed against
+        # (24.14.1, checked with `node --version` on the dev machine
+        # 2026-09-08). If the dev Node version drifts, update this pin —
+        # don't silently widen to "latest" and lose the "what we actually
+        # tested" guarantee.
+        node: ['20', '24.14.1']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test (full suite — includes privacy / read-only / packaging fixture-archive gate)
+        run: npm test
+
+  release-zip-smoke:
+    name: release zip smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # Pin to the same Node version the runtime ZIP is built and
+          # smoke-tested with. Keep in sync with the `test` job's exact pin
+          # above.
+          node-version: '24.14.1'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: Ensure zip/unzip are on PATH (Windows runner)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v zip >/dev/null 2>&1 || choco install zip -y
+          command -v unzip >/dev/null 2>&1 || choco install unzip -y
+
+      - name: Build official runtime ZIP (npm run release:zip)
+        run: npm run release:zip
+
+      - name: Verify sha256 of the built ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          zip_file=$(ls agent-doctor-runtime-*.zip)
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum -c "${zip_file}.sha256"
+          else
+            shasum -a 256 -c "${zip_file}.sha256"
+          fi
+
+      - name: Extract the packaged ZIP and smoke-test the compiled CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="${RUNNER_TEMP}/agent-doctor-runtime-smoke"
+          rm -rf "${stage}"
+          mkdir -p "${stage}"
+          zip_path=$(ls release/agent-doctor-runtime-*.zip)
+          unzip -q "${zip_path}" -d "${stage}"
+
+          cd "${stage}"
+          # Only what's in the ZIP: package.json + package-lock.json + dist/.
+          # No devDependencies, no src/, no test/, no fixtures/ — this is the
+          # regression gate for #76 (vocab JSON missing from dist would make
+          # this crash with ENOENT instead of printing a finding).
+          npm ci --omit=dev
+
+          node dist/cli.js --help >/dev/null 2>&1 || true
+          node dist/cli.js scan --home "${GITHUB_WORKSPACE}/fixtures/scope-mismatch/env/home" --json > scan-output.json
+          grep -q SCOPE_MISMATCH scan-output.json

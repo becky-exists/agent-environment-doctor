@@ -1,0 +1,3 @@
+# Minimal Codex home so the codex adapter reports present=true.
+# From Codex, the Claude Code skills directory is outside the search path (normal, not a finding).
+model = "fixture"

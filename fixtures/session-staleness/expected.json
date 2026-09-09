@@ -1,0 +1,142 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "session-staleness",
+  "home": "env/home",
+  "project": null,
+  "runtimes": [
+    "claude-code",
+    "codex"
+  ],
+  "probe": {
+    "live_window_minutes": 5256000,
+    "self_session": "cccc3333-0000-4000-8000-000000000003",
+    "note": "live_window is set to 10 years so the recorded sessions count as recently active regardless of when the fixture was checked out. self_session is set to the name-collision session so the guard for the Doctor's own session is exercised separately from the collision guard."
+  },
+  "findings": [
+    {
+      "finding_id": "UNREACHABLE_REFERENCE",
+      "subtype": "undiscovered_declaration",
+      "severity": "error",
+      "confidence": "high",
+      "subject": {
+        "path": "~/.claude/skills/moved-away.md",
+        "name": "moved-away"
+      },
+      "evidence_must_include": [
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "rule_id": "claude.skill.requires_dir_skill_md",
+          "discovered": false
+        },
+        {
+          "type": "contrast",
+          "path": "~/.claude/skills/still-there/SKILL.md"
+        }
+      ],
+      "why": "The static layer reports the same file from its own angle: it sits inside the search path in a shape the loader does not read. The active-runtime layer adds that a running session still has it. Both are true and neither replaces the other."
+    },
+    {
+      "finding_id": "SESSION_STALENESS",
+      "subtype": "capability_present_but_unconfigured",
+      "severity": "warn",
+      "confidence": "high",
+      "subject": {
+        "name": "moved-away",
+        "path": "~/.claude/skills/moved-away.md"
+      },
+      "evidence_must_include": [
+        {
+          "type": "session",
+          "session_id": "aaaa1111-0000-4000-8000-000000000001"
+        },
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "rule_id": "claude.skill.requires_dir_skill_md",
+          "discovered": false
+        }
+      ],
+      "must_not_contain": [
+        "restart",
+        "should"
+      ],
+      "why": "The session's startup skill set lists \"moved-away\" and the file is still inside the search path but in a shape the loader does not read. The description recorded for the session matches the file's declared description, so they are the same capability. A configuration change reaches a session only when it starts."
+    },
+    {
+      "finding_id": "SESSION_STALENESS",
+      "subtype": "resource_changed_after_start",
+      "severity": "warn",
+      "confidence": "medium",
+      "subject": {
+        "name": "aaaa1111-0000-4000-8000-000000000001"
+      },
+      "evidence_must_include": [
+        {
+          "type": "session",
+          "session_id": "aaaa1111-0000-4000-8000-000000000001"
+        },
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "mechanism": "rule_autoload",
+          "load_mode": "always"
+        }
+      ],
+      "why": "The always-loaded rule's mtime is after this session started, so the session holds the earlier text. Only timestamps were compared: claude-code session records do not store instruction text."
+    },
+    {
+      "finding_id": "SESSION_STALENESS",
+      "subtype": "resource_changed_after_start",
+      "severity": "warn",
+      "confidence": "medium",
+      "subject": {
+        "name": "bbbb2222-0000-4000-8000-000000000002"
+      },
+      "evidence_must_include": [
+        {
+          "type": "session",
+          "session_id": "bbbb2222-0000-4000-8000-000000000002"
+        }
+      ],
+      "why": "Timestamps are compared even for a non-interactive session: restricted launch flags change which capabilities it has, not when it started."
+    }
+  ],
+  "no_findings": [
+    {
+      "name": "still-there",
+      "why": "Present in the session and still discovered. Same name, same state, nothing stale."
+    },
+    {
+      "session_id": "cccc3333-0000-4000-8000-000000000003",
+      "why": "This is the Doctor's own session in this fixture. Divergence there is expected and must never be reported."
+    },
+    {
+      "capability": "moved-away",
+      "session_id": "bbbb2222-0000-4000-8000-000000000002",
+      "why": "The non-interactive session also lists moved-away, but its capability set is not compared: restricted launch flags make a difference from the configured state expected."
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "path": "~/.claude/skills/moved-away.md",
+      "runtime": "claude-code",
+      "discovered": false,
+      "rule_id": "claude.skill.requires_dir_skill_md"
+    },
+    {
+      "path": "~/.claude/skills/still-there/SKILL.md",
+      "runtime": "claude-code",
+      "discovered": true,
+      "rule_id": "claude.skill.description_always_loaded"
+    },
+    {
+      "path": "~/.claude/rules/always-on.md",
+      "runtime": "claude-code",
+      "mechanism": "rule_autoload",
+      "discovered": true,
+      "load_mode": "always",
+      "scope_condition": null
+    }
+  ]
+}

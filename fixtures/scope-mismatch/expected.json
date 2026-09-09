@@ -1,0 +1,122 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "scope-mismatch",
+  "home": "env/home",
+  "project": null,
+  "runtimes": [
+    "claude-code",
+    "codex"
+  ],
+  "findings": [
+    {
+      "finding_id": "SCOPE_MISMATCH",
+      "severity": "warn",
+      "confidence": "high",
+      "subject": {
+        "path": "~/.claude/rules/channels-only.md",
+        "kind": "rule",
+        "name": "channels-only"
+      },
+      "condition_line": 3,
+      "evidence_must_include": [
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "mechanism": "rule_autoload",
+          "rule_id": "claude.rule.paths_optional",
+          "load_mode": "always"
+        },
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "mechanism": "append_system_prompt",
+          "rule_id": "claude.launcher.append_system_prompt",
+          "load_mode": "always"
+        },
+        {
+          "type": "resource",
+          "path": "~/.claude/rules/channels-only.md",
+          "line": 3
+        },
+        {
+          "type": "contrast",
+          "path": "~/.claude/rules/family-scope.md",
+          "note": "same directory, declares paths:, load_mode=path_conditional"
+        }
+      ],
+      "why": "Condition A (static): load_mode=always while a sibling in the same directory is path_conditional, so the conditional mechanism exists and is unused. Condition B (heuristic): line 3 states a launch condition. A+B together = warn. The same file also enters through the launcher (--append-system-prompt), so the Doctor must show both bindings; that is what mechanism in the Binding identity is for."
+    }
+  ],
+  "no_findings": [
+    {
+      "path": "~/.claude/rules/family-scope.md",
+      "why": "Contrast. Declares paths:, so it is path_conditional. That is the correct use of the mechanism."
+    },
+    {
+      "path": "~/bin/start.sh",
+      "why": "The launcher itself never enters the context (mechanism=launcher, load_mode=never). It is provenance, not a symptom."
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "path": "~/.claude/rules/channels-only.md",
+      "runtime": "claude-code",
+      "mechanism": "rule_autoload",
+      "discovered": true,
+      "rule_id": "claude.rule.paths_optional",
+      "load_mode": "always",
+      "scope_condition": null
+    },
+    {
+      "path": "~/.claude/rules/channels-only.md",
+      "runtime": "claude-code",
+      "mechanism": "append_system_prompt",
+      "discovered": true,
+      "rule_id": "claude.launcher.append_system_prompt",
+      "load_mode": "always",
+      "source_ref": {
+        "type": "resource",
+        "resource_path": "~/bin/start.sh",
+        "locator": ":5"
+      }
+    },
+    {
+      "path": "~/.claude/rules/channels-only.md",
+      "runtime": "claude-code",
+      "bindings_count": 2
+    },
+    {
+      "path": "~/.claude/rules/family-scope.md",
+      "runtime": "claude-code",
+      "mechanism": "rule_autoload",
+      "discovered": true,
+      "rule_id": "claude.rule.paths_optional",
+      "load_mode": "path_conditional",
+      "scope_condition": [
+        "~/family/**"
+      ]
+    },
+    {
+      "path": "~/.claude/rules/family-scope.md",
+      "runtime": "claude-code",
+      "bindings_count": 1
+    },
+    {
+      "path": "~/bin/start.sh",
+      "kind": "launcher",
+      "runtime": "claude-code",
+      "mechanism": "launcher",
+      "load_mode": "never"
+    },
+    {
+      "path": "~/.claude/rules/channels-only.md",
+      "line_matches": {
+        "line": 3,
+        "pattern": "claude --channels"
+      }
+    }
+  ],
+  "launchers": [
+    "env/home/bin/start.sh"
+  ]
+}

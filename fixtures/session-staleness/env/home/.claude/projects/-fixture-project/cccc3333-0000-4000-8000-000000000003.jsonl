@@ -1,0 +1,1 @@
+{"type": "attachment", "timestamp": "2026-01-01T00:00:00.000Z", "version": "2.1.263", "entrypoint": "cli", "isSidechain": false, "attachment": {"type": "skill_listing", "isInitial": true, "skillCount": 1, "names": ["moved-away"], "content": "- moved-away: A completely different capability that happens to share the name, from a source the Doctor does not collect."}}

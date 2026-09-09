@@ -1,0 +1,121 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "unreachable-reference",
+  "home": "env/home",
+  "project": null,
+  "runtimes": [
+    "claude-code",
+    "codex"
+  ],
+  "findings": [
+    {
+      "finding_id": "UNREACHABLE_REFERENCE",
+      "subtype": "undiscovered_declaration",
+      "severity": "error",
+      "confidence": "high",
+      "subject": {
+        "path": "~/.claude/skills/flat-orphan.md",
+        "kind": "skill",
+        "name": "flat-orphan"
+      },
+      "evidence_must_include": [
+        {
+          "type": "binding",
+          "runtime": "claude-code",
+          "rule_id": "claude.skill.requires_dir_skill_md"
+        },
+        {
+          "type": "contrast",
+          "path": "~/.claude/skills/discovered-one/SKILL.md"
+        }
+      ],
+      "why": "Inside the Claude Code search path, but flat .md is not the shape the loader reads. Every runtime binding is discovered=false and the claude-code one is discovered=false for a shape reason, not a territory reason."
+    },
+    {
+      "finding_id": "UNREACHABLE_REFERENCE",
+      "subtype": "missing_target",
+      "severity": "error",
+      "confidence": "high",
+      "subject": {
+        "path": "~/.claude/agents/andy.md",
+        "line": 11,
+        "kind": "agent_def",
+        "name": "andy"
+      },
+      "reference": {
+        "raw": "ghost:some-skill",
+        "syntax": "skill_ref"
+      },
+      "evidence_must_include": [
+        {
+          "type": "reference",
+          "path": "~/.claude/agents/andy.md",
+          "raw": "ghost:some-skill",
+          "line": 11
+        },
+        {
+          "type": "absence",
+          "target": "ghost:some-skill",
+          "searched_must_include": [
+            "~/.claude/settings.json#enabledPlugins",
+            "~/.claude/plugins/installed_plugins.json#plugins"
+          ]
+        }
+      ],
+      "why": "The referenced plugin `ghost` is in neither enabledPlugins nor installed_plugins.json. The finding must list where it looked."
+    }
+  ],
+  "no_findings": [
+    {
+      "path": "~/.claude/skills/discovered-one/SKILL.md",
+      "why": "Contrast. Correct shape inside the search path; discovered=true on claude-code."
+    },
+    {
+      "path": "~/.claude/skills/discovered-one/SKILL.md",
+      "runtime": "codex",
+      "why": "discovered=false on codex is territory (codex.skill.not_in_standard_locations), not shape. Observation, never a finding."
+    },
+    {
+      "path": "~/.claude/agents/andy.md",
+      "why": "The path_ref on line 12 resolves to an existing file. A resolvable reference is not missing_target (the same file is legitimately the subject of the ghost:some-skill finding).",
+      "reference": "~/.claude/skills/discovered-one/SKILL.md"
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "path": "~/.claude/skills/flat-orphan.md",
+      "runtime": "claude-code",
+      "discovered": false,
+      "rule_id": "claude.skill.requires_dir_skill_md",
+      "load_mode": "never"
+    },
+    {
+      "path": "~/.claude/skills/flat-orphan.md",
+      "runtime": "codex",
+      "discovered": false,
+      "rule_id": "codex.skill.not_in_standard_locations"
+    },
+    {
+      "path": "~/.claude/skills/discovered-one/SKILL.md",
+      "runtime": "claude-code",
+      "discovered": true,
+      "rule_id": "claude.skill.description_always_loaded"
+    },
+    {
+      "path": "~/.claude/agents/andy.md",
+      "reference": {
+        "raw": "ghost:some-skill",
+        "syntax": "skill_ref",
+        "line": 11
+      }
+    },
+    {
+      "path": "~/.claude/agents/andy.md",
+      "reference": {
+        "raw": "~/.claude/skills/discovered-one/SKILL.md",
+        "syntax": "path_ref",
+        "line": 12
+      }
+    }
+  ]
+}

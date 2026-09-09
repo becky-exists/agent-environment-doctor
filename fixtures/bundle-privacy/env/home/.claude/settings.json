@@ -1,0 +1,16 @@
+{
+  "model": "opusplan",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/tanaka/bin/notify.sh --api-key=__PLANTED_ANTHROPIC_KEY__ --to tanaka@example.com"
+          }
+        ]
+      }
+    ]
+  }
+}

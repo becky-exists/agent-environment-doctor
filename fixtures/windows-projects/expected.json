@@ -1,0 +1,46 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "windows-projects",
+  "home": "env/home",
+  "project": null,
+  "runtimes": ["claude-code", "codex"],
+  "findings": [],
+  "guard": "Windows 形式の slug が混ざっているだけで Finding を出してはいけない。符号化の違いは症状ではない。",
+  "no_findings": [
+    {
+      "path": "~/.claude/projects/c--users-foo-bar-gsd/memory/MEMORY.md",
+      "why": "Windows 規則（全体 lowercase）の slug。符号化規則が Mac と違うこと自体は症状ではない。列挙で見つかるので、これが見つからない方が異常。"
+    },
+    {
+      "path": "~/.claude/projects/c--Users-Foo-Bar-Mixed/memory/MEMORY.md",
+      "why": "Windows 規則（drive letter だけ lowercase）の slug。一次情報の実装とコメントが食い違うので、両方の候補を突合できることを保証する。"
+    },
+    {
+      "path": "~/.claude/projects/-Volumes-SSD2TB-posix-project/memory/MEMORY.md",
+      "why": "Mac / Linux 規則の slug が同じ環境に同居していても、片方の規則で他方を落とさない。"
+    },
+    {
+      "path": "~/.claude/projects/d--data-no-memory/.gitkeep",
+      "why": "memory ディレクトリを持たない project。memory が無いという事実であって、読めなかったのではない。この 2 つを混同しないための対照。"
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "path": "~/.claude/projects/c--users-foo-bar-gsd/memory/MEMORY.md",
+      "kind": "memory"
+    },
+    {
+      "path": "~/.claude/projects/c--Users-Foo-Bar-Mixed/memory/MEMORY.md",
+      "kind": "memory"
+    },
+    {
+      "path": "~/.claude/projects/-Volumes-SSD2TB-posix-project/memory/MEMORY.md",
+      "kind": "memory"
+    },
+    {
+      "path": "~/.claude/skills/win-skill/SKILL.md",
+      "runtime": "claude-code",
+      "discovered": true
+    }
+  ]
+}

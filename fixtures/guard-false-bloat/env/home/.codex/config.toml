@@ -1,0 +1,10 @@
+# Codex home with one disabled plugin entry left behind (a tombstone).
+# In Phase 0 this is an observation. Nothing references it, so it is not UNREACHABLE_REFERENCE either.
+model = "fixture"
+
+[plugins."retired@fixture-marketplace"]
+enabled = false
+
+[mcp_servers.fixture-tool]
+command = "npx"
+args = ["-y", "fixture-mcp-server-codex"]

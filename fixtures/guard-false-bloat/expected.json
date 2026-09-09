@@ -1,0 +1,101 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "guard-false-bloat",
+  "home": "env/home",
+  "project": null,
+  "runtimes": [
+    "claude-code",
+    "codex"
+  ],
+  "findings": [],
+  "guard": "A build in which this fixture yields any finding fails, regardless of every other result.",
+  "no_findings": [
+    {
+      "kind": "mcp_server",
+      "count": 12,
+      "why": "Many MCP servers, all deferred. Count is not a symptom. Heavy is not bad."
+    },
+    {
+      "path": "~/.claude/projects/x/memory/MEMORY.md",
+      "why": "Large memory index. Protected by default. Size is not a symptom. Heavy is not bad."
+    },
+    {
+      "path": "~/.claude/skills/never-fired/SKILL.md",
+      "why": "Zero recorded invocations. Unused is not unnecessary."
+    },
+    {
+      "path": "~/.agents/skills/codex-only/SKILL.md",
+      "runtime": "claude-code",
+      "why": "discovered=false from claude-code because the path is another runtime's territory (claude.skill.not_in_search_path). Invisible is not abnormal. Observation, not finding."
+    },
+    {
+      "path": "~/.claude/skills/claude-only/SKILL.md",
+      "runtime": "codex",
+      "why": "The mirror case: discovered=false from codex for territory reasons (codex.skill.not_in_standard_locations). Observation, not finding."
+    },
+    {
+      "path": "~/.codex/config.toml#plugins.\"retired@fixture-marketplace\"",
+      "why": "Disabled plugin entry left behind. Nothing else references it. In Phase 0 this is an observation (TOMBSTONE_ENTRY is Phase 2). The plugin_ref extracted from its own declaration is a self-declaration, not a reference from elsewhere, and must not become missing_target."
+    },
+    {
+      "path": "~/.claude/settings.json#hooks.SessionStart[0].hooks[0]",
+      "why": "One hook on one event. Registered hooks are normal."
+    }
+  ],
+  "ir_preconditions": [
+    {
+      "count_kind": "mcp_server",
+      "min": 12
+    },
+    {
+      "path": "~/.claude/projects/x/memory/MEMORY.md",
+      "kind": "memory",
+      "min_size_bytes": 20000
+    },
+    {
+      "path": "~/.agents/skills/codex-only/SKILL.md",
+      "runtime": "claude-code",
+      "discovered": false,
+      "rule_id": "claude.skill.not_in_search_path"
+    },
+    {
+      "path": "~/.agents/skills/codex-only/SKILL.md",
+      "runtime": "codex",
+      "discovered": true,
+      "rule_id": "codex.skill.agents_dir_included"
+    },
+    {
+      "path": "~/.claude/skills/claude-only/SKILL.md",
+      "runtime": "codex",
+      "discovered": false,
+      "rule_id": "codex.skill.not_in_standard_locations"
+    },
+    {
+      "path": "~/.claude/skills/never-fired/SKILL.md",
+      "observation": {
+        "kind": "invocation",
+        "value": 0
+      }
+    },
+    {
+      "path": "~/.claude/skills/used-once/SKILL.md",
+      "observation": {
+        "kind": "invocation",
+        "value": 1
+      }
+    },
+    {
+      "path": "~/.codex/config.toml#plugins.\"retired@fixture-marketplace\"",
+      "runtime": "codex",
+      "discovered": false,
+      "rule_id": "codex.plugin.enabled_flag"
+    },
+    {
+      "path": "~/.codex/config.toml",
+      "kind": "settings",
+      "runtime": "codex",
+      "mechanism": "settings_file",
+      "load_mode": "never"
+    }
+  ]
+}

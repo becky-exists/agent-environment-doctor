@@ -1,0 +1,1 @@
+{"type": "attachment", "timestamp": "2026-01-01T00:00:00.000Z", "version": "2.1.263", "entrypoint": "sdk-py", "isSidechain": false, "attachment": {"type": "skill_listing", "isInitial": true, "skillCount": 1, "names": ["moved-away"], "content": "- moved-away: Was a discovered skill when the session started. It is now a flat .md, so it is no longer discovered."}}

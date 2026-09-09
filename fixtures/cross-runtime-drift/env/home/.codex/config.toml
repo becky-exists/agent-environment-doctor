@@ -1,0 +1,2 @@
+# Minimal Codex home. The shared agents skills directory is the Codex search path.
+model = "fixture"

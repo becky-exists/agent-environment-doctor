@@ -1,0 +1,39 @@
+{
+  "name": "agent-environment-doctor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Diagnose the effective runtime state of AI agent environments (Claude Code, Codex). READ ONLY.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agent-doctor": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && tsx scripts/copy-assets.ts",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/cli.ts",
+    "test": "tsx scripts/run-tests.ts",
+    "golden": "tsx scripts/golden-check.ts",
+    "golden:update": "tsx scripts/golden-check.ts --update",
+    "scan": "tsx src/cli.ts scan",
+    "ui": "tsx src/cli.ts ui",
+    "history": "tsx src/cli.ts history",
+    "snapshot": "tsx src/cli.ts snapshot",
+    "bundle": "tsx src/cli.ts bundle",
+    "release:zip": "npm run build && tsx scripts/build-runtime-zip.ts"
+  },
+  "dependencies": {
+    "js-tiktoken": "^1.0.21",
+    "js-yaml": "^4.1.0",
+    "smol-toml": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

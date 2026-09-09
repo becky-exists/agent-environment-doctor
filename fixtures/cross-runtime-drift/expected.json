@@ -1,0 +1,38 @@
+{
+  "schema": "agent-doctor-fixture-expectation/1",
+  "fixture": "cross-runtime-drift",
+  "home": "env/home",
+  "project": null,
+  "runtimes": ["claude-code", "codex"],
+  "findings": [
+    {
+      "finding_id": "CROSS_RUNTIME_DRIFT",
+      "severity": "warn",
+      "confidence": "high",
+      "subject": { "name": "finish", "kind": "skill" },
+      "sides": [
+        { "runtime": "claude-code", "path": "~/.claude/skills/finish/SKILL.md" },
+        { "runtime": "codex", "path": "~/.agents/skills/finish/SKILL.md" }
+      ],
+      "evidence_must_include": [
+        { "type": "binding", "runtime": "claude-code", "resource_path": "~/.claude/skills/finish/SKILL.md", "discovered": true },
+        { "type": "binding", "runtime": "codex", "resource_path": "~/.agents/skills/finish/SKILL.md", "discovered": true }
+      ],
+      "must_not_contain": ["which side is canonical", "delete", "remove"],
+      "why": "Same name, each side discovered by a different runtime, normalized_hash differs. The Doctor reports the two versions and which is newer. It does not pick one."
+    }
+  ],
+  "no_findings": [
+    { "name": "same", "why": "Identical normalized_hash on both sides. Same name across runtimes is not drift when the content matches." },
+    { "name": "crlf-twin", "why": "Only line endings differ. content_hash differs, normalized_hash matches. Reporting this would be the false positive normalization exists to prevent." },
+    { "path": "~/.agents/skills/finish/SKILL.md", "runtime": "claude-code", "why": "discovered=false from claude-code is territory (claude.skill.not_in_search_path). Not UNREACHABLE_REFERENCE." }
+  ],
+  "ir_preconditions": [
+    { "same_name": "finish", "normalized_hash_equal": false },
+    { "same_name": "same", "normalized_hash_equal": true },
+    { "same_name": "crlf-twin", "normalized_hash_equal": true, "content_hash_equal": false },
+    { "path": "~/.claude/skills/finish/SKILL.md", "runtime": "claude-code", "discovered": true },
+    { "path": "~/.agents/skills/finish/SKILL.md", "runtime": "codex", "discovered": true, "rule_id": "codex.skill.agents_dir_included" },
+    { "path": "~/.agents/skills/finish/SKILL.md", "runtime": "claude-code", "discovered": false, "rule_id": "claude.skill.not_in_search_path" }
+  ]
+}

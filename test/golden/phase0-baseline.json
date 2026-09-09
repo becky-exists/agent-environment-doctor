@@ -1,0 +1,101 @@
+{
+  "baseline_id": "phase0-2026-09-07",
+  "captured_at": "2026-09-07T08:27:50.935Z",
+  "tool_version": "0.2.0-phase0",
+  "schema_version": 4,
+  "environment": {
+    "note": "Recorded from a real environment. Numbers are environment-specific; the value is in detecting movement, not in the absolute figures.",
+    "project": "/Volumes/SSD2TB/interventionworks",
+    "runtimes": "claude-code@2.1.263, codex@0.153.4"
+  },
+  "history": [
+    {
+      "date": "2026-09-07",
+      "event": "initial",
+      "note": "Phase 0 完了時の実測。resources 203 / bindings 275 / observations 510 / 同名 skill 26 組（一致 16 / drift 10）/ discovered=false 73。schema_version 1"
+    },
+    {
+      "date": "2026-09-07",
+      "event": "ir-fix-after-codex-review",
+      "note": "Codex 独立レビュー反映（schema_version 2）。総数 203/275/510 と 26/16/10、discovered=false 73 は不変。内訳のみ移動: by_kind rule 2→1 + exec_policy 1（Codex .rules を prompt rule から分離）、by_load_mode always 64→63 + unknown 1、settings 5 件 on_demand→never（設定ファイルは読まれるが context に載らない。mechanism=settings_file）、undiscovered.by_rule の codex.skill.not_in_search_path → not_in_standard_locations（skills.config の明示参照を先に評価するため名称変更）。launcher は golden に含めない（環境固有の入力）"
+    },
+    {
+      "date": "2026-09-07",
+      "event": "plugin-agents-collected",
+      "note": "Finding 実装中に判明した偽陽性（`codex:codex-rescue` は plugin の agent で skill ではない）を潰すため、plugin の agents/*.md を agent_def（<plugin>:<agent>）として収集。後回し項目の前倒し規則を適用。resources 203→204 / bindings 275→276 / observations 510→512 / by_kind agent_def 11→12 / on_demand 116→117。26/16/10 と discovered=false 73 は不変"
+    },
+    {
+      "date": "2026-09-07",
+      "event": "invocation-scoped-to-discovered",
+      "note": "ドッグフード（Codex 2/5・Claude 3/5）で、~/.agents 側の skill 複製に claude の skillUsage 回数が写っていた（drift の判断材料を汚す）ため、invocation は Claude Code が発見している skill にだけ付けるよう修正。observations 512→480（~/.agents 配下 32 本の invocation を出さない）。resources / bindings / 26/16/10 / discovered=false 73 は不変"
+    },
+    {
+      "date": "2026-09-07",
+      "event": "update",
+      "note": "Phase 1 #55: ~/.claude/commands を収集対象に追加（セッションの skill 一覧に skill と同じ名前空間で現れ、名前照合の誤診源だった）→ resources 204→206 / bindings 276→278 / on_demand 117→119 / by_kind に command 2。observations 480→484。schema_version 3（sessions / processes / Observation.session_id）。summary に sessions を追加（--probe 無しの収集では 0）"
+    },
+    {
+      "date": "2026-09-07",
+      "event": "update",
+      "note": "Phase 1 #58/#56/#57: schema_version 4（binding_id の導出から content hash を外した。history が容器ファイルの変更で 46+46 件の偽イベントを出したため）。数値は 206/278/484 のまま不変"
+    }
+  ],
+  "summary": {
+    "counts": {
+      "resources": 206,
+      "bindings": 278,
+      "observations": 484
+    },
+    "per_runtime": {
+      "claude-code": {
+        "bindings": 178,
+        "observations": 72
+      },
+      "codex": {
+        "bindings": 100,
+        "observations": 0
+      }
+    },
+    "by_kind": {
+      "agent_def": 12,
+      "command": 2,
+      "exec_policy": 1,
+      "hook_script": 16,
+      "instruction": 4,
+      "mcp_server": 16,
+      "memory": 29,
+      "output_style": 1,
+      "plugin": 15,
+      "rule": 1,
+      "settings": 5,
+      "skill": 104
+    },
+    "by_load_mode": {
+      "always": 63,
+      "deferred": 16,
+      "never": 78,
+      "on_demand": 119,
+      "path_conditional": 1,
+      "unknown": 1
+    },
+    "same_name_skills": {
+      "pairs": 26,
+      "identical": 16,
+      "drifted": 10
+    },
+    "undiscovered": {
+      "total": 73,
+      "by_rule": {
+        "claude.skill.not_in_search_path": 32,
+        "codex.plugin.enabled_flag": 1,
+        "codex.skill.not_in_standard_locations": 40
+      }
+    },
+    "same_content_multi_path": 17,
+    "sessions": {
+      "total": 0,
+      "live": 0,
+      "by_runtime": {}
+    }
+  }
+}
