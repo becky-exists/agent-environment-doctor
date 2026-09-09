@@ -26,6 +26,15 @@ const files = readdirSync(TEST_DIR)
   .sort()
   .map((f) => join(TEST_DIR, f));
 
+// Zero-Match-Is-Failure（#83 と同種の穴を塞ぐ）: TEST_DIR の指定ミスや一時的な
+// 空ディレクトリ化で 0 件になった場合、node:test の run({ files: [] }) は
+// 何も実行せず 'end' を正常に発火する。そのまま抜けると npm test が「全部green」を
+// 報告してしまう — 実際には1つもテストが走っていないのに、を許さない
+if (files.length === 0) {
+  console.error('run-tests: no test files discovered under', TEST_DIR, '— refusing to report success');
+  process.exit(1);
+}
+
 console.log(`run-tests: ${files.length} test file(s) — ${files.map((f) => f.split(/[\\/]/).pop()).join(', ')}`);
 
 let failed = false;

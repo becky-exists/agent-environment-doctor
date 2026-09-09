@@ -1,10 +1,26 @@
 {
   "name": "agent-environment-doctor",
-  "version": "1.0.1",
-  "private": true,
+  "version": "1.1.0",
+  "private": false,
   "description": "Diagnose the effective runtime state of AI agent environments (Claude Code, Codex). READ ONLY.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/becky-exists/agent-environment-doctor.git"
+  },
+  "homepage": "https://github.com/becky-exists/agent-environment-doctor#readme",
+  "bugs": {
+    "url": "https://github.com/becky-exists/agent-environment-doctor/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "agent-doctor": "./dist/cli.js"
   },

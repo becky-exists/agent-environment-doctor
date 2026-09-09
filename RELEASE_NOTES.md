@@ -1,5 +1,9 @@
 # Agent Environment Doctor — Release Notes
 
+## 1.1.0
+
+Added npm/npx as an additional distribution channel (`npx agent-environment-doctor@latest`), alongside the existing Release ZIP, which remains fully supported. The npm package ships only `dist/`, `README.md`, and `LICENSE` — the same runtime, none of the repo's dev/test/docs files. Also closed two zero-file-discovery gaps in the build pipeline: the test runner and the build-asset copy step could each silently report success while finding nothing to run or copy.
+
 ## 1.0.1
 
 Fixed a READ ONLY contract violation in Codex runtime detection. The Doctor previously invoked `codex --version`, and the Codex CLI could create temporary files under `$CODEX_HOME` as a side effect. Version detection no longer executes the Codex CLI, and regression coverage now verifies subprocess-induced patient writes.

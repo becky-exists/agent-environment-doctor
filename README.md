@@ -2,7 +2,7 @@
 
 **Diagnoses the *effective* runtime state of AI agent environments (Claude Code, Codex). Read only. It observes, keeps evidence, names symptoms. It does not treat.**
 
-> Current release: **v1.0.1**. Supports macOS / Windows (native), Claude Code / Codex, Node `>=20`. Published at [github.com/becky-exists/agent-environment-doctor](https://github.com/becky-exists/agent-environment-doctor).
+> Current release: **v1.1.0**. Supports macOS / Windows (native), Claude Code / Codex, Node `>=20`. Published at [github.com/becky-exists/agent-environment-doctor](https://github.com/becky-exists/agent-environment-doctor).
 
 Environments drift silently: a skill sitting in the wrong format so it never loads, a rule meant for one launch condition firing in every session, a reference to a plugin that no longer exists. Nobody notices day to day — the "Installed State" (what's on disk) and the "**Effective Runtime State**" (what actually loads into the *next* session you launch) quietly pull apart. That gap is what this tool measures.
 
@@ -43,6 +43,14 @@ That's a static scan: on-disk config only, diagnosing what the *next* session yo
 ```bash
 node dist/cli.js scan --probe --project /path/to/your/project
 ```
+
+Or, once published, via npx (no download step):
+
+```bash
+npx agent-environment-doctor@latest scan --project /path/to/your/project
+```
+
+Agent Environment Doctor itself does not send diagnostic data over the network. `npx` itself downloads the package from the npm registry and writes to the npm cache — that is npm's behavior, not the Doctor's.
 
 ### Building from source, and updating
 

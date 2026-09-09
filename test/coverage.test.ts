@@ -64,6 +64,10 @@ test('coverage: docs/coverage.md（英語）に collected / not_collected の対
   // 移設された（README側は6 bulletの要約+リンクのみ）。以前はREADME内の「## Coverage」節を
   // split して検査していたが、今はファイル全体が Coverage 宣言なのでファイル全文を検査対象にする。
   const section = await readFile(join(ROOT, 'docs/coverage.md'), 'utf8');
+  assert.ok(
+    PHASE0_COVERAGE.collected.length + PHASE0_COVERAGE.not_collected.length > 0,
+    'PHASE0_COVERAGE が空 — coverage宣言自体が壊れている可能性',
+  );
   for (const line of [...PHASE0_COVERAGE.collected, ...PHASE0_COVERAGE.not_collected]) {
     const anchor = COVERAGE_LINE_ANCHORS_EN[line];
     assert.ok(anchor, `no anchor registered for (add one to COVERAGE_LINE_ANCHORS_EN and to docs/coverage.md's English Coverage section): ${line}`);

@@ -143,3 +143,47 @@ jobs:
           node dist/cli.js --help >/dev/null 2>&1 || true
           node dist/cli.js scan --home "${GITHUB_WORKSPACE}/fixtures/scope-mismatch/env/home" --json > scan-output.json
           grep -q SCOPE_MISMATCH scan-output.json
+
+  # npm-pack-check — v1.1.0 で追加（#87）。`npm pack` が実際に作る tarball が
+  # package.json#files allowlist 通りの中身になっているか（漏れ/混入の両方）を、
+  # release-zip-smoke（手作りZIP経路）とは独立に、npm registry配布経路そのもので確認する。
+  # Round 2 で使い捨てCIとして検証済みの内容
+  # (https://github.com/becky-exists/agent-environment-doctor/actions/runs/34315894693,
+  # macOS/Windows 両方green) をここで正式ジョブとして固定する。
+  npm-pack-check:
+    name: npm pack check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- packaging-npm   # 上記5のテスト（test/packaging-npm.test.ts）を含む
+      - run: npm pack
+      - name: Extract and smoke-test the packed tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir extracted
+          tar -xzf agent-environment-doctor-*.tgz -C extracted --strip-components=1
+          cd extracted
+          npm install --omit=dev
+          node dist/cli.js --help
+          mkdir -p /tmp/dummy-project /tmp/dummy-home
+          node dist/cli.js scan --project /tmp/dummy-project --home /tmp/dummy-home
+          node dist/cli.js bundle --out /tmp/bundle-out.json --home /tmp/dummy-home --project /tmp/dummy-project
+      - name: npx bin resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          TGZ=$(ls agent-environment-doctor-*.tgz)
+          npx --yes --package="file:$TGZ" agent-doctor --help
+          npx --yes "file:$TGZ" --help
