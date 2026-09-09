@@ -92,13 +92,13 @@ after(async () => {
 });
 
 /** 実環境の変数を持ち込まずに、差し込み済みの home から収集する */
-async function collectPlanted(home: string) {
+async function collectPlanted(home: string, project: string | null = null) {
   const saved = { CODEX_HOME: process.env['CODEX_HOME'], CLAUDE_CONFIG_DIR: process.env['CLAUDE_CONFIG_DIR'], PATH: process.env['PATH'] };
   delete process.env['CODEX_HOME'];
   delete process.env['CLAUDE_CONFIG_DIR'];
   process.env['PATH'] = dirname(process.execPath);
   try {
-    return (await collect([claudeCodeAdapter, codexAdapter], { home, project: null })).snapshot;
+    return (await collect([claudeCodeAdapter, codexAdapter], { home, project })).snapshot;
   } finally {
     for (const [k, v] of Object.entries(saved)) {
       if (v === undefined) delete process.env[k];
@@ -787,4 +787,106 @@ test('scanForResourceBodyLeaks: rule 本文の行 / hook command 宣言値がそ
 
   const safe = JSON.stringify({ somewhere: 'nothing to see here' });
   assert.deepEqual(await scanForResourceBodyLeaks(safe, snapshot, readTextFake), []);
+});
+
+// ───────────────────── #91 project 根の漏れ（第三者レビューで発見） ─────────────────────
+//
+// 症状: `--project` が HOME 配下にあると、redact strict でも bundle に実フォルダ名が残った。
+//       しかも self check は passed のまま（自己検査の針が home / username / secret だけだった）。
+// 原因: レポート側が先にパスを `~/...` へ畳むのに、project 置換が**絶対パスの形だけ**を見ていた。
+//       素通りしたあと `~ → $HOME` だけが走り、`$HOME/<実名>/...` になって残る。
+// ここでは「原因」「自己検査」「要約の正直さ」「E2E」の 4 点を別々に固定する。
+
+test('#91 redact: home が ~ / $HOME に畳まれた表記でも project 名を置き換える', () => {
+  const home = '/Users/someone';
+  const R = new Redactor({ home, project: `${home}/SECRETCLIENT`, level: 'strict' });
+  const forms = [
+    `${home}/SECRETCLIENT/.claude/agents/andy.md`, // 絶対パス（従来から通っていた形）
+    '~/SECRETCLIENT/.claude/agents/andy.md', // レポート側で畳まれた形 ← 修正前はここが素通り
+    '$HOME/SECRETCLIENT/.claude/agents/andy.md', // すでに home が置換された形
+    '~\\SECRETCLIENT\\.claude\\agents\\andy.md', // Windows 区切り（報告者の環境）
+  ];
+  for (const form of forms) {
+    const out = R.text(form);
+    assert.ok(!out.includes('SECRETCLIENT'), `project 名が残った: ${form} → ${out}`);
+  }
+});
+
+test('#91 redact: 置換が一度も起きなければ projects_anonymised は 0（id を振った数を「消した数」として報告しない）', () => {
+  const R = new Redactor({ home: '/Users/someone', project: '/Users/someone/SECRETCLIENT', level: 'strict' });
+  R.text('この文字列には project 名が出てこない');
+  const s = R.summary();
+  assert.equal(s.projects_anonymised, 0, 'id を振っただけで「匿名化した」と数えている');
+  assert.equal(s.project_ids_assigned, 1);
+});
+
+test('#91 scanForLeaks: 修正前の形（$HOME/<実名>/…）を自己検査が捕まえる', () => {
+  const home = '/Users/someone';
+  const projects = [`${home}/SECRETCLIENT`];
+  const leaked = {
+    llm_report: { findings: [{ summary: '$HOME/SECRETCLIENT/.claude/agents/<agent_def-1>.md:5 references `ghost:<redacted>`' }] },
+  };
+  const leaks = scanForLeaks(leaked, { home, projects });
+  assert.ok(
+    leaks.some((l) => l.kind === 'project_root'),
+    'rules[] が約束している project 根を自己検査が見ていない（passed が誤解を招く）',
+  );
+
+  const clean = { llm_report: { findings: [{ summary: '<project-1>/.claude/agents/<agent_def-1>.md:5' }] } };
+  assert.deepEqual(scanForLeaks(clean, { home, projects }), []);
+});
+
+test('#91 scanForLeaks: 構造の名前は project 針にしない（誤検知で自己検査の信用を落とさない）', () => {
+  const home = '/Users/someone';
+  // project が `docs` という名前でも、無関係な docs/ を漏れとして叫ばない
+  assert.deepEqual(scanForLeaks({ x: '$HOME/.claude/plugins/p/docs/readme.md' }, { home, projects: [`${home}/docs`] }), []);
+});
+
+test('#91 bundle E2E: HOME 配下の project のフォルダ名が bundle に 1 つも残らない', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'agent-doctor-p91-'));
+  planted.push(root);
+  const home = join(root, 'home');
+  const project = join(home, 'SECRETCLIENT');
+  await mkdir(join(home, '.claude'), { recursive: true });
+  await mkdir(join(project, '.claude', 'agents'), { recursive: true });
+  await writeFile(join(home, '.claude', 'CLAUDE.md'), '# x\n', 'utf8');
+  // 未解決参照を 1 本作って、findings の summary にパスを載せる（漏れが出る経路そのもの）
+  await writeFile(join(project, '.claude', 'agents', 'andy.md'), '---\nname: a\ndescription: d\n---\nuses `ghost:skill`\n', 'utf8');
+
+  const snapshot = await collectPlanted(home, project);
+  const result = await runFindings(snapshot, { readText });
+  const llm = await buildLlmReport(snapshot, result, { readText });
+  const b = await buildBundle({ snapshot, result, llm, clusters: [], history: null, level: 'strict', readText, symptom: null });
+
+  const raw = JSON.stringify(b);
+  assert.ok(!raw.includes('SECRETCLIENT'), 'bundle に project のフォルダ名が残っている');
+  assert.equal(b.redaction.self_check.passed, true, `self check が落ちた: ${JSON.stringify(b.redaction.self_check.leaks)}`);
+});
+
+// #91 の 2 経路目。実環境での検証中に見つけた——同じ「置換の鍵になっていない形」の別の入口。
+// project が `~/.claude/projects` に memory ディレクトリを持たないと、slug 符号化候補が
+// 置換鍵に登録されず、「絞り込めなかった（tried: -Users-<user>-<実名>）」に実名が残っていた。
+
+test('#91 redact: memory ディレクトリを持たない project でも、slug に符号化された名前を置き換える', () => {
+  const home = '/Users/someone';
+  const R = new Redactor({ home, project: `${home}/SECRETCLIENT`, projectSlugs: ['-Users-someone-otherproject'], level: 'strict' });
+  const msg = 'Project memory could not be narrowed down: the current project could not be matched (tried: -Users-someone-SECRETCLIENT).';
+  const out = R.text(msg);
+  assert.ok(!out.includes('SECRETCLIENT'), `slug 符号化された project 名が残った: ${out}`);
+});
+
+test('#91 scanForLeaks: slug に符号化された形も自己検査が捕まえる（パス区切りに面していない）', () => {
+  const home = '/Users/someone';
+  const leaked = { context_cost: { not_measured: ['Project memory could not be narrowed down (tried: -Users-<user>-SECRETCLIENT).'] } };
+  const leaks = scanForLeaks(leaked, { home, projects: [`${home}/SECRETCLIENT`] });
+  assert.ok(
+    leaks.some((l) => l.kind === 'project_root'),
+    'パス区切りに面していない形を見逃している（adjacent だけの判定では拾えない）',
+  );
+});
+
+test('#91 scanForLeaks: Doctor 自身が散文で使う語と同じ project 名は針にしない（置換はされる）', () => {
+  const home = '/Users/someone';
+  const prose = { x: 'the agent definition lists skills that the runtime discovers' };
+  assert.deepEqual(scanForLeaks(prose, { home, projects: [`${home}/agent`] }), []);
 });

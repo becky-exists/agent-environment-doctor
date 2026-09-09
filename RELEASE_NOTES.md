@@ -1,5 +1,21 @@
 # Agent Environment Doctor — Release Notes
 
+## 1.1.1
+
+Fixed a privacy defect in `bundle`: when the diagnosed project directory was located **inside the home directory**, the project's real folder name could survive redaction — at `--redact strict` as well — and the bundle's own self-check still reported `passed`. Reported by a third-party reviewer who ran v1.1.0 on their own Windows environment; reproduced here on macOS before fixing. If you generated a bundle from a project under your home directory with 1.0.0–1.1.0 and shared it, that bundle may contain the project's folder name. No file contents, secrets, usernames or home paths were affected; the leak was limited to the project directory name.
+
+Two paths were involved, both the same root cause — a form of the project path that was never a substitution key:
+
+- Report text is folded to `~/…` before redaction, but project substitution only matched the absolute path. The folded form passed through untouched, and the later `~` → `$HOME` step turned it back into `$HOME/<real name>/…`.
+- A project with no memory directory under `.claude/projects` never had its encoded slug candidates registered, so the real name survived inside the "could not be narrowed down (tried: …)" explanation.
+
+Also in this release:
+
+- `redaction.projects_anonymised` now counts projects **whose name was actually replaced**, not ids that were merely assigned. The new `redaction.project_ids_assigned` field carries the previous meaning. In the reported case the old field read `1` while nothing had been replaced.
+- The bundle self-check now verifies the project roots and slugs that `redaction.rules[]` promises to remove, matching them as whole tokens so that both `$HOME/<name>/…` and slug-encoded `-Users-<user>-<name>` forms are caught. Project names that collide with structural directory names or with the Doctor's own prose vocabulary are still replaced but are deliberately not used as self-check needles, to keep the check free of false alarms.
+
+Regression coverage: 8 new tests pin the reported reproduction, both leak paths, the honesty of the summary counters, and the self-check's ability to catch the pre-fix output. All 8 fail against the 1.1.0 sources and pass after the fix. Full suite 199 passing / 1 skipped on macOS.
+
 ## 1.1.0
 
 Added npm/npx as an additional distribution channel (`npx agent-environment-doctor@latest`), alongside the existing Release ZIP, which remains fully supported. The npm package ships only `dist/`, `README.md`, and `LICENSE` — the same runtime, none of the repo's dev/test/docs files. Also closed two zero-file-discovery gaps in the build pipeline: the test runner and the build-asset copy step could each silently report success while finding nothing to run or copy.

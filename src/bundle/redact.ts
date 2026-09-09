@@ -57,6 +57,28 @@ function usernameVariantPatternSource(user: string): string {
     .join('');
 }
 
+/**
+ * home を畳んだ表記（`~/x` `$HOME/x`、Windows の `\` 区切りも）を作る（#91）。
+ *
+ * bundle に入る文字列は、レポート生成側で先に `~/...` へ畳まれていることがある。
+ * project 根を**絶対パスの形だけ**で置換していると、畳まれた表記は素通りし、
+ * そのあとの `~ → $HOME` だけが走って `$HOME/<実名>/...` が残る。
+ * 置換の順序に依存しないよう、Redactor 側で畳まれた形も同じ鍵として持つ。
+ *
+ * home の外の project（`--project` が別ドライブ等）には何も足さない。
+ */
+export function foldedHomeForms(root: string, home: string): string[] {
+  if (!home || !root.startsWith(home)) return [];
+  const rel = root.slice(home.length);
+  if (!/^[/\\]/.test(rel)) return []; // home そのもの、または `homeXXX` のような別ディレクトリ
+  const out = new Set<string>();
+  for (const r of [rel, rel.replace(/\//g, '\\'), rel.replace(/\\/g, '/')]) {
+    out.add(`~${r}`);
+    out.add(`$HOME${r}`);
+  }
+  return [...out];
+}
+
 export interface RedactorOptions {
   home: string;
   /** 現在の project の絶対パス */
@@ -72,7 +94,10 @@ export interface RedactionSummary {
   level: RedactionLevel;
   home_replaced: boolean;
   username_replaced: boolean;
+  /** **実際に置換が起きた** project の数。id を振っただけのものは数えない（#91） */
   projects_anonymised: number;
+  /** id を振った project の数。`projects_anonymised` との差は「名前が一度も出てこなかった」の意味 */
+  project_ids_assigned: number;
   paths_anonymised: number;
   names_anonymised: number;
   secrets_removed: Array<{ kind: string; count: number }>;
@@ -87,6 +112,8 @@ export class Redactor {
   private readonly userVariantRe: RegExp | null;
   /** 実体 → `<project-N>`。project 根と slug の両方を同じ id に寄せる */
   private readonly projectIds = new Map<string, string>();
+  /** 実際に置換が起きた project id（#91: 「id を振った数」を「消した数」として報告しないため） */
+  private readonly projectsReplaced = new Set<string>();
   private readonly pathIds = new Map<string, string>();
   private readonly nameIds = new Map<string, string>();
   private readonly identities = new Map<string, string>();
@@ -111,8 +138,13 @@ export class Redactor {
       const id = this.assignProject(root);
       const m = matchProjectSlug(root, slugs);
       if (m.slug) this.projectIds.set(m.slug, id);
-      // 実在しない場合も、符号化候補は同じ id へ（他の project の slug と衝突させない）
-      for (const c of projectSlugCandidates(root)) if (slugs.includes(c)) this.projectIds.set(c, id);
+      // 符号化候補は、`~/.claude/projects` に**実在しなくても**同じ id へ（#91）。
+      // 候補は root を符号化したものなので、他の project の slug と衝突しない。
+      // 実在するものだけ登録していた頃は、memory ディレクトリを持たない project の名前が
+      // 「絞り込めなかった（tried: -Users-<user>-<実名>）」という説明文に残っていた。
+      for (const c of projectSlugCandidates(root)) this.projectIds.set(c, id);
+      // #91: home が畳まれた表記も同じ id へ
+      for (const k of foldedHomeForms(root, this.home)) this.projectIds.set(k, id);
     }
     // 残りの slug（他プロジェクト）にもそれぞれ id を振る
     for (const s of slugs) if (!this.projectIds.has(s)) this.assignProject(s);
@@ -200,7 +232,12 @@ export class Redactor {
 
     // 長いものから置換する（短い slug が長い slug の一部を食わないように）
     const keys = [...this.projectIds.keys()].sort((a, b) => b.length - a.length);
-    for (const k of keys) s = s.split(k).join(this.projectIds.get(k)!);
+    for (const k of keys) {
+      if (!s.includes(k)) continue;
+      const id = this.projectIds.get(k)!;
+      s = s.split(k).join(id);
+      this.projectsReplaced.add(id); // #91: 消した数だけを summary に出す
+    }
 
     s = this.identityPass(s);
 
@@ -268,7 +305,8 @@ export class Redactor {
       level: this.level,
       home_replaced: true,
       username_replaced: true,
-      projects_anonymised: new Set(this.projectIds.values()).size,
+      projects_anonymised: this.projectsReplaced.size,
+      project_ids_assigned: new Set(this.projectIds.values()).size,
       paths_anonymised: this.pathIds.size,
       names_anonymised: this.nameIds.size,
       secrets_removed: [...this.secretHits].map(([kind, count]) => ({ kind, count })).sort((a, b) => b.count - a.count),
@@ -297,16 +335,17 @@ export interface Leak {
  * 出来上がった bundle をもう一度走査して、漏れがないか自分で確かめる。
  * 「たぶん入っていない」で済ませないための最後の関門。**bundle は必ずこれを通してから書く。**
  */
-export function scanForLeaks(bundle: unknown, opts: { home: string; extra?: string[] }): Leak[] {
+export function scanForLeaks(bundle: unknown, opts: { home: string; extra?: string[]; projects?: string[] }): Leak[] {
   const out: Leak[] = [];
   const home = opts.home.replace(/[/\\]+$/, '');
   const user = basename(home);
   const userIsGeneric = user.length < 3 || GENERIC_USERNAMES.has(user.toLowerCase());
-  const needles: Array<{ kind: string; value: string; anywhere: boolean }> = [
-    { kind: 'home_path', value: home, anywhere: true },
+  const needles: Array<{ kind: string; value: string; mode: NeedleMode }> = [
+    { kind: 'home_path', value: home, mode: 'anywhere' },
     // username は散文にも出うる語のことがある（home / root など）。**パスや宛先に面している時だけ**数える
-    ...(userIsGeneric ? [] : [{ kind: 'username', value: user, anywhere: false }]),
-    ...(opts.extra ?? []).map((v) => ({ kind: 'forbidden_string', value: v, anywhere: true })),
+    ...(userIsGeneric ? [] : [{ kind: 'username', value: user, mode: 'adjacent' as NeedleMode }]),
+    ...projectNeedles(opts.projects ?? []),
+    ...(opts.extra ?? []).map((v) => ({ kind: 'forbidden_string', value: v, mode: 'anywhere' as NeedleMode })),
   ];
   // #71: username の完全一致では見逃す派生表現（Windows project slug 化で区切り文字/大文字小文字が変わった形）。
   // slug 文字列はパスの区切りに面していない 1 トークンなので、宛先隣接チェックではなく全文で検査する
@@ -316,7 +355,7 @@ export function scanForLeaks(bundle: unknown, opts: { home: string; extra?: stri
     if (typeof v === 'string') {
       for (const n of needles) {
         if (!n.value) continue;
-        if (n.anywhere ? v.includes(n.value) : identityAdjacent(v, n.value)) out.push({ kind: n.kind, where, sample: clip(v) });
+        if (matchNeedle(v, n.value, n.mode)) out.push({ kind: n.kind, where, sample: clip(v) });
       }
       if (userVariantRe) {
         userVariantRe.lastIndex = 0;
@@ -341,6 +380,62 @@ export function scanForLeaks(bundle: unknown, opts: { home: string; extra?: stri
   };
   walk(bundle, '$');
   return out;
+}
+
+type NeedleMode = 'anywhere' | 'adjacent' | 'token';
+
+/**
+ * project 根と slug を自己検査の針にする（#91）。
+ *
+ * `rules[]` は「project 根と slug は `<project-N>` に置き換える」と約束しているのに、
+ * 自己検査はそれを一度も確かめていなかった。だから **漏れていても self check は通った**。
+ *
+ * 針は `token` 一致で数える。パス区切りに面している形（`$HOME/<実名>/…`）だけでなく、
+ * slug に符号化された形（`-Users-<user>-<実名>`）も同じ 1 語として拾うため
+ * （実測で後者が残っていた。前者だけを見ていると、また「passed なのに漏れている」になる）。
+ *
+ * **針にしないもの**: 構造の名前（`src` `docs` 等）と、Doctor 自身が散文で使う語。
+ * これらは置換はされるが、ここで数えると誤検知が出て、自己検査そのものが信用されなくなる。
+ * 「見ていないものは見ていないと言う」— 数えない対象があること自体は隠さない。
+ */
+function projectNeedles(projects: string[]): Array<{ kind: string; value: string; mode: NeedleMode }> {
+  const out: Array<{ kind: string; value: string; mode: NeedleMode }> = [];
+  const seen = new Set<string>();
+  for (const p of projects) {
+    if (!p) continue;
+    const hasSep = /[/\\]/.test(p);
+    const value = hasSep ? basename(p.replace(/[/\\]+$/, '')) : p;
+    const lower = value.toLowerCase();
+    if (!isIdentityLike(value) || GENERIC_USERNAMES.has(lower) || DOCTOR_VOCABULARY.has(lower)) continue;
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push({ kind: hasSep ? 'project_root' : 'project_slug', value, mode: 'token' });
+  }
+  return out;
+}
+
+/**
+ * Doctor 自身が散文で使う語。project 名がこれと同じ時は**自己検査の針にしない**。
+ * 置換は行われる。ここで数えると自分の説明文に当たり続けて、self check が狼少年になる。
+ */
+const DOCTOR_VOCABULARY = new Set([
+  'agent', 'agents', 'skill', 'skills', 'session', 'sessions', 'runtime', 'runtimes', 'plugin', 'plugins',
+  'hook', 'hooks', 'rule', 'rules', 'bundle', 'report', 'finding', 'findings', 'evidence', 'resource', 'resources',
+  'binding', 'bindings', 'observation', 'observations', 'claude', 'codex', 'doctor', 'snapshot', 'history',
+]);
+
+function matchNeedle(haystack: string, needle: string, mode: NeedleMode): boolean {
+  if (mode === 'anywhere') return haystack.includes(needle);
+  if (mode === 'adjacent') return identityAdjacent(haystack, needle);
+  // token: 前後が英数字・下線でない = 1 語として現れている
+  let i = haystack.indexOf(needle);
+  while (i !== -1) {
+    const before = i > 0 ? haystack[i - 1]! : '';
+    const after = i + needle.length < haystack.length ? haystack[i + needle.length]! : '';
+    if (!/[A-Za-z0-9_]/.test(before) && !/[A-Za-z0-9_]/.test(after)) return true;
+    i = haystack.indexOf(needle, i + 1);
+  }
+  return false;
 }
 
 /**

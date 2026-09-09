@@ -397,7 +397,8 @@ export async function buildBundle(inp: BuildBundleInput): Promise<DiagnosticBund
 
   // 自分で確かめる。「たぶん入っていない」で済ませない
   const serialised = JSON.stringify(redacted);
-  const leaks = scanForLeaks(redacted, { home: s.env.home });
+  // #91: rules[] が約束している project 根と slug も針にする（約束を自分で確かめる）
+  const leaks = scanForLeaks(redacted, { home: s.env.home, projects: [s.env.project, ...slugs].filter((x): x is string => !!x) });
   // strict では「登録した名前が 1 つも生で残っていない」ことまで確かめる
   for (const sample of R.sweep(serialised)) leaks.push({ kind: 'resource_name', where: '$ (serialised)', sample });
   // #73: 個別の field 名当てに頼らない最後の網。①危険な形の key/value がそのまま残っていないか
