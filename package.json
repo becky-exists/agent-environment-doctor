@@ -1,6 +1,6 @@
 {
   "name": "agent-environment-doctor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Diagnose the effective runtime state of AI agent environments (Claude Code, Codex). READ ONLY.",
   "license": "MIT",

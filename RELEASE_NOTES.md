@@ -1,5 +1,9 @@
 # Agent Environment Doctor — Release Notes
 
+## 1.0.1
+
+Fixed a READ ONLY contract violation in Codex runtime detection. The Doctor previously invoked `codex --version`, and the Codex CLI could create temporary files under `$CODEX_HOME` as a side effect. Version detection no longer executes the Codex CLI, and regression coverage now verifies subprocess-induced patient writes.
+
 ## 1.0.0
 
 Diagnose the effective runtime state of AI agent environments (Claude Code, Codex). READ ONLY.

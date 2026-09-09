@@ -94,6 +94,19 @@ Dogfood（#69）で「Claude なんか重い / 最近遅い / session が変」�
 
 ---
 
+## `report` / `snapshot` / `ui` は `bundle` と同じではない
+
+> 2026-09-09 追記（README compression pass 2）。`report --llm` / `snapshot` / `ui` の 4 コマンドは redaction レベルが全く違い、**人に渡していいのは `bundle` だけ**。
+
+| コマンド | 既定の redaction | 想定される行き先 |
+|---|---|---|
+| `snapshot --out <file>` | **なし。** 絶対パスと実名がそのまま入る | ローカルの `diff` / `history` 用。共有しない |
+| `ui` | なし（`127.0.0.1` にしか bind しないので外から届かないだけ） | 自分の画面。共有しない |
+| `report --llm` | home path だけ `~` に置換（`--no-redact` で生のまま出せる）。secret の形・username・project 名・資源名は**見ていない** | 自分が使う LLM（Emma / Claude / Codex 等）への引き継ぎ用。第三者への転送は想定していない |
+| `bundle --out <file>` | secret 11 種 + home + username + project の根/slug + 資源名を匿名化。**自己検査に落ちたら書かない** | 第三者に渡すための唯一のファイル。共有を前提に作られているのはこれだけ |
+
+**`report --llm` の JSON や `snapshot` ファイルをそのまま他人に送らない。** 第三者に渡す一次成果物が要るなら `bundle` で作る。
+
 ## Redaction 規則
 
 順序が意味を持つ。
