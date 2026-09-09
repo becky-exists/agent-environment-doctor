@@ -6,10 +6,8 @@
  */
 
 import { classifyError, recordAccess } from '../../ir/access.js';
-import { execFile } from 'node:child_process';
 import { readdir, readFile, stat, realpath } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { promisify } from 'node:util';
 import { parse as parseToml } from 'smol-toml';
 
 import { hashes } from '../../ir/normalize.js';
@@ -21,7 +19,6 @@ import { codexSearchPaths, resolveCodexHome, rulesFor } from './rules.js';
 import { extractReferences } from '../claude-code/references.js';
 import { TOOL_VERSION } from '../../version.js';
 
-const execFileAsync = promisify(execFile);
 const TOOL = 'agent-doctor';
 
 /** config.toml の [[skills.config]] path（明示参照）。collectResources で読み、computeBindings で使う */
@@ -186,13 +183,13 @@ export class CodexAdapter implements RuntimeAdapter {
   async detect(ctx: CollectContext): Promise<RuntimeInfo> {
     const config_home = resolveCodexHome(ctx.home, ctx.configHome);
     const present = await exists(config_home);
-    let version: string | null = null;
-    try {
-      const { stdout } = await execFileAsync('codex', ['--version'], { timeout: 15_000 });
-      version = (/(\d+\.\d+\.\d+)/.exec(stdout)?.[1]) ?? null;
-    } catch {
-      version = null;
-    }
+    // #86 (Case C): version 文字列だけのために実 codex バイナリを exec すると、Codex CLI 自身の
+    // argv0-dispatch ブートストラップが $CODEX_HOME/tmp/arg0/<random>/ にロックファイルと symlink を
+    // 自己生成する（--version を含む全サブコマンド共通の挙動）。READ ONLY を掲げるツールが診断対象
+    // 環境に無条件で書き込みを発生させていた。安全な非 exec 手段（npm グローバル配置時の
+    // package.json 直読み等）は codex のインストール形態が一様でないため確実に非破壊とは言えず、
+    // ここでは version を非破壊的に取得しない。present（config_home の存在）だけで検出する
+    const version: string | null = null;
     return { runtime: this.id, version, config_home, present };
   }
 

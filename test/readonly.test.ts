@@ -11,13 +11,21 @@
  *
  * さらに、この検査機自体が壊れていないことを確かめる自己試験を 1 本入れる
  * （わざと患者を触り、diff が検知することを見る）。
+ *
+ * #86 (Case C) 対応（2026-09-09）: 旧実装は `PATH: dirname(process.execPath)` で
+ * codex/claude を丸ごと ENOENT 化しており、adapter の exec 経路（`execFileAsync('codex', ...)`）
+ * を一度も通していなかった。これでは「exec しても副作用が無い」ことは検証できず、「exec しない
+ * fallback 分岐だけが green」という盲点があった（v1.0.0 の Case C 欠陥はこの盲点を通り抜けていた）。
+ * ここでは fixture 内にダミーの codex/claude 実行可能ファイルを置いて exec 経路を実際に通し、
+ * かつ ambient HOME/CODEX_HOME を実行者の本物ではなく fixture の隔離領域へリダイレクトすることで、
+ * 「実バイナリが起動されたら診断対象環境に副作用が出る」状況を再現できるようにしている。
  */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { cp, mkdtemp, mkdir, rm, chmod, readdir, lstat, appendFile, utimes, writeFile, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, delimiter } from 'node:path';
 
 import { FIXTURES, FIXTURE_NAMES, diffFingerprints, fingerprint, loadExpectation, toPosixKey } from './helpers.js';
 
@@ -55,6 +63,27 @@ interface Ward {
   home: string;
   out: string; // snapshot 出力先
   cwd: string; // CLI の cwd（既定の ./snapshots/ がここに落ちる）
+  bin: string; // ダミー codex / claude 実行可能ファイルの置き場（PATH の唯一の実体）
+  execLog: string; // ダミーが起動されたら追記する（起動有無の証拠。out/ 配下 = 許容領域）
+}
+
+/**
+ * fixture 内にダミーの `<name>`（POSIX）と `<name>.cmd`（Windows）を置く。
+ * どちらも: (1) execLog に起動された事実を残す (2) touchPatientDir が渡されていれば
+ * そこに `.lock` を作る（#86 実測の codex 実バイナリの副作用 $CODEX_HOME/tmp/arg0/(random)/.lock を模す）。
+ * 本物の codex/claude バイナリを呼ばずに「exec されたら何が起きるか」だけを再現する非破壊スタブ。
+ */
+async function writeFakeBinary(binDir: string, name: string, opts: { execLog: string; touchPatientDir?: string }): Promise<void> {
+  const touch = opts.touchPatientDir;
+  const posix = ['#!/bin/sh', `echo "${name}" >> "${opts.execLog}"`, ...(touch ? [`mkdir -p "${touch}"`, `: > "${touch}/.lock"`] : []), 'echo "9.9.9"', ''].join('\n');
+  const posixPath = join(binDir, name);
+  await writeFile(posixPath, posix);
+  await chmod(posixPath, 0o755);
+
+  // Windows: `.cmd` は CreateProcess が直接解釈できる（シバン不要）。node の execFile はバイナリ名に
+  // 拡張子を含めなくても Windows 上で PATHEXT を通じて解決する
+  const cmd = ['@echo off', `echo ${name}>>"${opts.execLog}"`, ...(touch ? [`mkdir "${touch}" >NUL 2>NUL`, `type NUL>"${touch}\\.lock"`] : []), 'echo 9.9.9', ''].join('\r\n');
+  await writeFile(join(binDir, `${name}.cmd`), cmd);
 }
 
 async function admit(fixture: string): Promise<Ward> {
@@ -66,18 +95,43 @@ async function admit(fixture: string): Promise<Ward> {
   await cp(join(FIXTURES, fixture, 'env', 'home'), home, { recursive: true, verbatimSymlinks: true });
   const out = join(root, 'out');
   const cwd = join(root, 'cwd');
+  const bin = join(root, 'bin');
   await mkdir(out);
   await mkdir(cwd);
-  return { root, patient, home, out, cwd };
+  await mkdir(bin);
+  const execLog = join(out, 'exec-calls.log');
+  // codex: 修正前は detect() が無条件で exec し、$CODEX_HOME/tmp/arg0/* に書き込んでいた（#86 Case C）。
+  // 修正後は exec 自体が無いので、このダミーは一度も起動されないはず
+  await writeFakeBinary(bin, 'codex', { execLog, touchPatientDir: join(home, '.codex', 'tmp', 'arg0', 'exec-marker') });
+  // claude: 実バイナリは実測で fs 副作用ゼロ（#86 の対象外、コード変更なし）。ここでは
+  // 「PATH 制限でテストが exec 経路を素通りしていないか」だけを execLog で確認する
+  await writeFakeBinary(bin, 'claude', { execLog });
+  return { root, patient, home, out, cwd, bin, execLog };
 }
 
 function runCli(w: Ward, args: string[], launchers: string[] = []) {
+  const codexHome = join(w.home, '.codex');
   const env: Record<string, string> = {
-    // 実環境の変数を持ち込まない。PATH は node だけ（claude / codex の --version を呼ばせない）
-    PATH: dirname(process.execPath),
-    HOME: process.env['HOME'] ?? '',
+    // 実環境の変数を持ち込まない。
+    // PATH は fixture 内のダミー codex/claude（w.bin）+ node だけ — 実バイナリではなくダミーへ解決させることで
+    // 「exec 経路は本当に通っているか」を検証可能にする（旧実装は PATH を node だけに絞り、ENOENT で
+    // exec 自体を素通りさせていた = #86 Case C を検知できなかった根本原因の一つ、A-5）。
+    // HOME / CODEX_HOME も実行者の本物ではなく fixture の隔離領域へ向ける — exec された実バイナリの
+    // 書き込み先は Doctor の --config-home 上書きとは別に ambient env で決まるため（#86 A-3 クレア発見）、
+    // ここを本物のままにすると実バイナリが実 HOME を汚染しても本テストは気づけない
+    PATH: `${w.bin}${delimiter}${dirname(process.execPath)}`,
+    HOME: w.home,
+    CODEX_HOME: codexHome,
     TMPDIR: process.env['TMPDIR'] ?? tmpdir(),
     NODE_OPTIONS: '',
+    ...(process.platform === 'win32'
+      ? {
+          // cmd.exe 経由での .cmd 起動・DLL 検索に要る最小限。Windows 未実機検証（#86 Fix Handoff 参照）
+          PATHEXT: process.env['PATHEXT'] ?? '.COM;.EXE;.BAT;.CMD',
+          SystemRoot: process.env['SystemRoot'] ?? '',
+          ComSpec: process.env['ComSpec'] ?? '',
+        }
+      : {}),
   };
   const extra = launchers.length ? ['--launcher', launchers.join(',')] : [];
   const r = spawnSync(process.execPath, [TSX, CLI, ...args, '--home', w.home, '--project', ...extra], {
@@ -139,6 +193,19 @@ for (const name of FIXTURE_NAMES) {
     assert.ok(diff.some((d) => /^added: cwd\/snapshots\/.+\.json$/.test(d)), '既定パス ./snapshots/ の snapshot が無い（cwd の外に落ちた可能性）');
     const s1 = JSON.parse(await readFile(snap1, 'utf8')) as { resources: unknown[] };
     assert.ok(s1.resources.length > 0, 'snapshot が空');
+
+    // #86 Case C 回帰ガード: exec 経路が本当に通っていること（claude ダミーは起動される。
+    // PATH 制限だけでテストが exec を素通りしていないかの証拠）、かつ codex は一度も
+    // exec されていないこと（Step 1 の修正前はここで codex が記録され FAIL する）
+    const execCalls = (await readFile(w.execLog, 'utf8').catch(() => ''))
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    assert.ok(
+      execCalls.includes('claude'),
+      `claude ダミーが一度も exec されていない（PATH 制限で exec 経路が空振りしている疑い）: [${execCalls.join(',')}]`,
+    );
+    assert.ok(!execCalls.includes('codex'), `codex ダミーが exec された（#86 Case C 回帰）: [${execCalls.join(',')}]`);
   });
 }
 
