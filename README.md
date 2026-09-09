@@ -2,7 +2,9 @@
 
 **Diagnoses the *effective* runtime state of AI agent environments (Claude Code, Codex). Read only. It observes, keeps evidence, names symptoms. It does not treat.**
 
-> Status: Findings are implemented (`scan` / `report --llm` / `bundle` / `ui` all work). v1.0 (Issue #77) is public at [github.com/becky-exists/agent-environment-doctor](https://github.com/becky-exists/agent-environment-doctor). See `docs/` for details.
+Agent environments drift silently — a skill that never loads because of a format mismatch, a rule that fires in every session instead of the one it was written for, a reference to a plugin that no longer exists. The Doctor finds these by observation, not guesswork: **Observation → Evidence → Symptom**. It never fixes, optimizes, deletes, or rewrites anything itself — that decision is left to a human, or an LLM the human is using.
+
+> Current release: **v1.0.0**. Supports macOS / Windows (native), Claude Code / Codex, Node `>=20`. Published at [github.com/becky-exists/agent-environment-doctor](https://github.com/becky-exists/agent-environment-doctor). See `docs/` for details.
 
 ## Credits
 
@@ -61,7 +63,7 @@ Extract the new version's ZIP into a separate directory → `npm ci --omit=dev` 
 
 ## Continuous Integration
 
-`.github/workflows/ci.yml` (two gates: `test` and `release-zip-smoke`. macOS + Windows native, a matrix of the Node 20 line and the version actually used for development, plus a separate gate that extracts the prebuilt ZIP and smoke-tests it). **This file currently does not fire as GitHub Actions**, because it lives inside a monorepo (GitHub only looks at `.github/workflows/` at the repository root). It's written to work unchanged once this directory becomes the root of its own repository. See the comments at the top of the workflow file for details and the reasoning behind any skips.
+`.github/workflows/ci.yml` (two gates: `test` and `release-zip-smoke`. macOS + Windows native, a matrix of the Node 20 line and the version actually used for development, plus a separate gate that extracts the prebuilt ZIP and smoke-tests it). This runs as GitHub Actions on every push to `main` and on pull requests — see [github.com/becky-exists/agent-environment-doctor/actions](https://github.com/becky-exists/agent-environment-doctor/actions) for current runs. See the comments at the top of the workflow file for the reasoning behind any skips.
 
 ---
 
@@ -167,7 +169,7 @@ Scope: Phase 0 (static, next_session)
 - Actual token measurement via tiktoken vs. the `chars/4` estimate — the crude estimate is never used
 - Ingesting the official `/skill-doctor`, connecting to MCP servers
 - Temporal identity of Observations (multiple points in time for the same kind/method within one snapshot are not retained)
-- Windows load average (Node's `os.loadavg()` always returns `[0,0,0]`, so it's `unsupported`) and swap (not implemented as of #69; real-machine Windows verification is still pending)
+- Windows load average (Node's `os.loadavg()` always returns `[0,0,0]`, so it's `unsupported`) and swap (not implemented, `unsupported`) — confirmed on native Windows during v1.0 acceptance testing
 - Disk I/O, the official Anthropic / OpenAI status pages (bundle generation prioritizes never reaching the network; provider outages are something the recipient checks separately)
 
 ## What you can do today
@@ -298,7 +300,7 @@ The rule is now unified in `src/ir/slug.ts` (it used to be duplicated across `pr
 
 **History** derives events from a series of snapshots. It is not a listing. "When something increased / disappeared / changed / drift began or resolved / a session went stale / a runtime's version changed." Event dates mean "this happened between these two points," and periods that weren't observed are shown explicitly as gaps. Increases or decreases are never treated as good or bad in themselves.
 
-The bar for "done" isn't "can we build a complete environment model" — it's "can we trust the first 3 Findings." Remaining work toward completeness is tracked in Issues, and only gets pulled forward if it's shown to cause a false positive or false negative in those 3 Findings (real example: plugin agent definitions. `codex:codex-rescue` turned out to be an agent, not a skill, causing a false positive `missing_target` — so it was added to what's collected).
+The bar for "done" isn't "can we build a complete environment model" — it's "can we trust the Findings it reports." Remaining work toward completeness is tracked in Issues, and only gets pulled forward if it's shown to cause a false positive or false negative in an actual Finding (real example: plugin agent definitions. `codex:codex-rescue` turned out to be an agent, not a skill, causing a false positive `missing_target` — so it was added to what's collected).
 
 **What "protected" means** is that it stops proposals like "it's big, cut it" or "unused, delete it" — it does not lower the severity of a fact-based diagnosis (e.g. a missing reference target). A Finding on a protected resource keeps its full severity; `report --llm`'s `protected_handling` adds "wholesale changes or removal are not recommended" for it.
 

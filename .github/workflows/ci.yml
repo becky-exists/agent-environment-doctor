@@ -1,16 +1,13 @@
-# Agent Environment Doctor — CI (Issue #77 M1)
+# Agent Environment Doctor — CI
 #
-# NOTE (2026-09-08): this file lives at
-# iw-projects/agent-environment-doctor/.github/workflows/ci.yml inside the
-# interventionworks monorepo. GitHub Actions only discovers workflows at the
-# *repository root* .github/workflows/, so this file is inert here — it does
-# not run as CI for the monorepo. It is written so that it works unchanged
-# once this directory becomes the root of its own repo under the
-# becky-exists GitHub Organization (Issue #77 M2, github.com/becky-exists/
-# agent-environment-doctor). Do not "fix" the fact that it doesn't fire in
-# the monorepo; that's expected until the split.
+# Current state: this workflow runs as GitHub Actions on the standalone
+# public repo (github.com/becky-exists/agent-environment-doctor), on every
+# push to main and on pull requests. It originated inside the
+# interventionworks monorepo, where it was inert — GitHub Actions only
+# discovers workflows at the *repository root* .github/workflows/, so it
+# didn't fire there. It has run unchanged since the repo became standalone.
 #
-# Two independent gates, matching Issue #77 M1:
+# Two independent gates:
 #   1. `test`               — npm ci / typecheck / build / full `npm test` on
 #                              macOS + Windows native, across the Node versions
 #                              we support (matrix below).
@@ -20,7 +17,7 @@
 #                              from the source-tree tests in job 1. This is the gate
 #                              that would have caught #76 (vocab JSON missing from dist).
 #
-# Skips and why (Issue #77 requires: "record the reason for any skip, and the alternate gate"):
+# Skips and why (record the reason for any skip, and the alternate gate):
 #   - Linux is not in the OS matrix. macOS + Windows native are the two
 #     supported platforms (see README "Supported"); Linux is unverified and
 #     out of scope for v1.0. No alternate gate — genuinely untested.
